@@ -1,0 +1,9 @@
+{
+    "rest_address": "localhost:8080",
+    "grpc_port": "3200",
+    "log_level": "info",
+    "db_dsn": "postgresql://postgres:postgres@localhost:5432/shortener?sslmode=disable",
+    "s3_address": "minio:9000",
+    "trust_subnet": "127.0.0.1/24",
+    "cors_allowed": ["http://localhost:8081"]
+}
