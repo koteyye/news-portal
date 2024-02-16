@@ -1,0 +1,7 @@
+{
+    "rest_address": "localhost:8080",
+    "log_level": "info",
+    "db_dsn": "postgresql://postgres:postgres@localhost:5432/news?sslmode=disable",
+    "s3_address": "minio:9000",
+    "cors_allowed": ["http://localhost:8081"]
+}

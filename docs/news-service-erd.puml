@@ -7,6 +7,8 @@ entity "news" as news {
     author : uuid
     description : text
     content_id : uuid
+    preview_id : uuid
+    state : enum[draft, published]
     created_at : timestamp
     updated_at : timestamp
     deleted_at : timestamp
@@ -36,7 +38,7 @@ entity "comments" as com {
     is_active : boolean
 }
 
-entity "content" as cont {
+entity "files" as cont {
     * id : uuid
     --
     file_name : varchar

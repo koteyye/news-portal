@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 create table if not exists users (
-    id uuid not null default gen_random_uuid() unique,
+    id uuid not null default gen_random_uuid() primary key unique,
     login varchar(512) not null unique,
     password varchar(512) not null,
     created_at timestamp default now(),
@@ -11,7 +11,7 @@ create table if not exists users (
 comment on table users is 'пользователи';
 
 create table if not exists avatar (
-    id uuid not null default gen_random_uuid() unique,
+    id uuid not null default gen_random_uuid() primary key unique,
     file_name varchar(1024) not null,
     bucket_name varchar(1024) not null,
     mime_type varchar(1024) not null,
@@ -22,7 +22,7 @@ create table if not exists avatar (
 comment on table avatar is 'аватар пользователя'
 
 create table if not exists profile (
-    id uuid not null default gen_random_uuid() unique,
+    id uuid not null default gen_random_uuid() primary key unique,
     user_id uuid not null,
     username varchar(512) not null,
     first_name varchar(512),
@@ -38,7 +38,7 @@ create table if not exists profile (
 comment on table profile is 'профиль пользователя';
 
 create table if not exists roles (
-    id uuid not null default gen_random_uuid() unique,
+    id uuid not null default gen_random_uuid() primary key unique,
     role_name varchar(256)
 );
 comment on table roles is 'роли'
