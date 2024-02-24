@@ -36,11 +36,20 @@ type Config struct {
 	// S3Address адрес файлового хранилища
 	S3Address string `json:"s3_address"`
 
+	// S3KeyID идентификатор ключа доступа в S3
+	S3KeyID string `json:"s3_keyID"`
+
+	// S3SecretKey ключ доступа в S3
+	S3SecretKey string `json:"s3_secretKey"`
+
 	// Subnet адрес доверенной подсети
 	TrustSubnet string `json:"trust_subnet"`
 
 	// CorsAllowed хосты, которым допускается вызывать REST-API сервиса
 	CorsAllowed []string `json:"cors_allowed"`
+
+	// SecretKey ключ для подписания
+	SecretKey string `json:"secret_key"`
 }
 
 func (c *Config) validate() error {
@@ -56,8 +65,14 @@ func (c *Config) validate() error {
 	if c.S3Address == "" {
 		return fmt.Errorf("%w: не задан s3_address", ErrConfigValidate)
 	}
+	if c.S3KeyID == "" {
+		return fmt.Errorf("%w: не задан s3_keyID", ErrConfigValidate)
+	}
 	if c.TrustSubnet == "" {
 		return fmt.Errorf("%w: не задан trust_subnet", ErrConfigValidate)
+	}
+	if c.SecretKey == "" {
+		return fmt.Errorf("%w: не задан secret_key", ErrConfigValidate)
 	}
 	return nil
 }

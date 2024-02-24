@@ -3,7 +3,7 @@
 create table if not exists users (
     id uuid not null default gen_random_uuid() primary key unique,
     login varchar(512) not null unique,
-    password varchar(512) not null,
+    hashed_password varchar(512) not null,
     created_at timestamp default now(),
     updated_at timestamp default now(),
     deleted_at timestamp
@@ -50,6 +50,8 @@ create table if not exists user_roles (
     foreign key (role_id) references roles(id)
 );
 comment on table user_roles is 'связь m2m пользователя и роли'
+
+insert into roles (role_name) values ("reader")
 -- +goose StatementEnd
 
 -- +goose Down

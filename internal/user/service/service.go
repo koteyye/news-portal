@@ -3,15 +3,17 @@ package service
 import (
 	"log/slog"
 
-	"github.com/koteyye/news-portal/internal/user/storage"
+	"github.com/koteyye/news-portal/pkg/s3"
+	"github.com/koteyye/news-portal/pkg/storage"
 )
 
 // Service структура сервисного слоя
 type Service struct {
 	storage storage.Storage
+	s3 *s3.S3repo
 	logger *slog.Logger
 }
 
-func NewService(storage storage.Storage, logger *slog.Logger) *Service {
-	return &Service{storage: storage, logger: logger}
+func NewService(storage storage.Storage, s3 *s3.S3repo, logger *slog.Logger) *Service {
+	return &Service{storage: storage, s3: s3, logger: logger}
 }

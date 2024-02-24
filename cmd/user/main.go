@@ -12,7 +12,9 @@ import (
 	"github.com/koteyye/news-portal/internal/user/config"
 	"github.com/koteyye/news-portal/internal/user/resthandler"
 	"github.com/koteyye/news-portal/internal/user/service"
-	"github.com/koteyye/news-portal/internal/user/storage/postgres"
+	"github.com/koteyye/news-portal/pkg/s3"
+	"github.com/koteyye/news-portal/pkg/signer"
+	"github.com/koteyye/news-portal/pkg/storage/postgres"
 	"github.com/koteyye/news-portal/server"
 	"golang.org/x/sync/errgroup"
 )
@@ -38,8 +40,10 @@ func main() {
 	if err != nil {
 		logger.Error(err.Error())
 	}
-	service := service.NewService(storage, logger)
-	restHandler := resthandler.NewRESTHandler(service, logger, cfg.CorsAllowed)
+	minio, err := s3.InitS3Repo(cfg.S3Address, cfg.S3KeyID, cfg.SecretKey, false)
+	service := service.NewService(storage, minio, logger)
+	signer := signer.New([]byte(cfg.SecretKey))
+	restHandler := resthandler.NewRESTHandler(service, logger, cfg.CorsAllowed, signer)
 
 	g.Go(func() error {
 		runRESTServer(gCtx, cfg, restHandler, logger)

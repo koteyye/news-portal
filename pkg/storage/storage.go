@@ -2,10 +2,11 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"io"
 
 	"github.com/gofrs/uuid"
-	"github.com/koteyye/news-portal/internal/user/models"
+	"github.com/koteyye/news-portal/pkg/models"
 )
 
 // Storage хранилище.
@@ -17,17 +18,13 @@ type Storage interface {
 	Avatar
 } 
 
-
 // Authorization регистрация и авторизация пользователя.
 type Authorizarion interface {
 	// SignUp регистрация пользователя.
-	SignUp(ctx context.Context, login string, hashPassword string) (uuid.UUID, error)
+	SignUp(ctx context.Context, login string, hashPassword string, profile *models.Profile) (*models.Profile, error)
 
 	// SignIn авторизация пользователя
-	SignIn(ctx context.Context, login string, hashPassword string) (uuid.UUID, error)
-
-	// ChangePassword сменить пароль пользователя
-	ChangePassword(ctx context.Context, login string, oldPassword string, newPassword string) error
+	SignIn(ctx context.Context, login string, hashPassword string) (*models.Profile, error)
 }
 
 // Users CRUD операции над пользователем.
@@ -46,3 +43,10 @@ type Users interface {
 type Avatar interface {
 	// TOBE
 }
+
+// ошибки storage
+var (
+	ErrDuplicate = errors.New("duplicate value")
+	ErrNotFound  = errors.New("value not found")
+	ErrOther     = errors.New("other storage error")
+)

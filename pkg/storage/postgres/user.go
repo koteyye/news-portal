@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/gofrs/uuid"
-	"github.com/koteyye/news-portal/internal/user/models"
+	"github.com/koteyye/news-portal/pkg/models"
 )
 
 

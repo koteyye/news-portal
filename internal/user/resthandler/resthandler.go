@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 	"github.com/koteyye/news-portal/internal/user/service"
+	"github.com/koteyye/news-portal/pkg/signer"
 )
 
 // RESTHandler HTTP обработчик сервиса.
@@ -14,11 +15,12 @@ type RESTHandler struct {
 	service *service.Service
 	logger *slog.Logger
 	corsAllowed []string
+	signer signer.Signer
 }
 
 // NewRESTHandler получить новый экземпляр RESTHandler.
-func NewRESTHandler(service *service.Service, logger *slog.Logger, corsAllowed []string) *RESTHandler {
-	return &RESTHandler{service: service, logger: logger, corsAllowed: corsAllowed}
+func NewRESTHandler(service *service.Service, logger *slog.Logger, corsAllowed []string, signer signer.Signer) *RESTHandler {
+	return &RESTHandler{service: service, logger: logger, corsAllowed: corsAllowed, signer: signer}
 }
 
 // InitRoutes инициализация mux.
@@ -32,11 +34,13 @@ func (h RESTHandler) InitRoutes() *chi.Mux {
 	}))
 
 	r.Route("/api", func(r chi.Router) {
-		r.Get("/healthCheck", h.healthCheck)
+		r.Route("health", func(r chi.Router) {
+			r.Use(h.auth)
+			r.Get("/check", h.healthCheck)
+		})
 		r.Route("/user", func(r chi.Router) {
 			r.Post("/signup", h.signUp)
 			r.Post("/signin", h.signIn)
-			r.Patch("/pass", h.changePassword)
 		})
 	})
 	return r
@@ -51,9 +55,5 @@ func (h *RESTHandler) signUp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) signIn(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-func (h *RESTHandler) changePassword (w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }

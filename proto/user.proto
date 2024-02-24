@@ -21,30 +21,6 @@ message UserByIDsResponse {
     repeated Users users = 1;
 }
 
-message UserByTokenRequest {
-    string token = 1;
-}
-
-message UserByIDRequest {
-    string userid = 1;
-}
-
-message UserByIDResponse {
-    Users user = 1;
-}
-
-message EditUserRequest {
-    Users user = 1;
-}
-
-message BoolResponse {
-    bool success = 1;
-}
-
 service User {
-    rpc GetUserByID(UserByIDRequest) returns (UserByIDResponse);
     rpc GetUserByIDs(UserByIDsRequest) returns (UserByIDsResponse);
-    rpc GetUserByToken(UserByTokenRequest) returns (UserByIDResponse);
-    rpc EditUser(EditUserRequest) returns (BoolResponse);
-    rpc DeleteUser(UserByIDRequest) returns (BoolResponse);
 }
