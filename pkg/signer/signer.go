@@ -58,7 +58,7 @@ func (s *jwtSigner) Sign(payload *models.Profile) (string, error) {
 	return tokenString, nil
 }
 
-func (s *jwtSigner) Parse(token string) (*models.Profile, error) {
+func (s *jwtSigner) Parse(token string) ( *models.Profile, error) {
 	claims, err := s.parseToken(token)
 	if err != nil {
 		return nil, fmt.Errorf("token parsing: %w", err)

@@ -20,11 +20,11 @@ type Storage interface {
 
 // Authorization регистрация и авторизация пользователя.
 type Authorizarion interface {
-	// SignUp регистрация пользователя.
-	SignUp(ctx context.Context, login string, hashPassword string) (uuid.UUID, error)
+	// CreateLogin создание пользователя
+	CreateLogin(ctx context.Context, login string, hashPassword string) (uuid.UUID, error)
 
-	// SignIn авторизация пользователя
-	SignIn(ctx context.Context, login string, hashPassword string) (*models.Profile, error)
+	// GetHashedPasswordByLogin получение захешированного пароля пользователя
+	GetHashedPasswordByLogin(ctx context.Context, login string) (uuid.UUID, string, error)
 }
 
 // Users CRUD операции над пользователем.

@@ -4,10 +4,9 @@ import (
 	"context"
 
 	"github.com/gofrs/uuid"
-	"github.com/koteyye/news-portal/pkg/models"
 )
 
-func (s *Storage) SignUp(ctx context.Context, login string, hashPassword string) (uuid.UUID, error) {
+func (s *Storage) CreateLogin(ctx context.Context, login string, hashPassword string) (uuid.UUID, error) {
 	var userID uuid.UUID
 
 	query1 := "insert into users (login, hashed_password) values ($1, $2) returning id;"
@@ -20,9 +19,17 @@ func (s *Storage) SignUp(ctx context.Context, login string, hashPassword string)
 	return userID, nil
 }
 
-func (s *Storage) SignIn(ctx context.Context, login string, hashPassword string) (*models.Profile, error) {
-	//TOBE
-	return nil, nil
+func (s *Storage) GetHashedPasswordByLogin(ctx context.Context, login string) (uuid.UUID, string, error) {
+	var hashedPassword string
+	var userID uuid.UUID
+
+	query := "select id, hashed_password from users where login = $1"
+
+	err := s.db.QueryRowContext(ctx, query, login).Scan(&userID, &hashedPassword)
+	if err != nil {
+		return uuid.Nil, "", errorHandle(err)
+	}
+	return userID, hashedPassword, nil
 }
 
 

@@ -84,5 +84,29 @@ func (h *RESTHandler) signUp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) signIn(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
+	ctx, cancel := context.WithTimeout(r.Context(), defaultTimeout)
+	defer cancel()
+
+	input, err := parseUserdata(r.Body)
+	if err != nil {
+		h.mapErrToResponse(w, http.StatusBadRequest, err)
+		return
+	}
+	profile, err := h.service.SignIn(ctx, input)
+	if err != nil {
+		h.mapErrToResponse(w, http.StatusBadRequest, err)
+	}
+
+	token, err := h.signer.Sign(profile)
+	if err != nil {
+		h.mapErrToResponse(w, http.StatusInternalServerError, err)
+		return
+	}
+	cookie := &http.Cookie{
+		Name: "authorization",
+		Value: token,
+		Path: "/",
+	}
+	http.SetCookie(w, cookie)
+	w.WriteHeader(http.StatusOK)
 }
