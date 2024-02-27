@@ -9,8 +9,6 @@ import (
 	"github.com/koteyye/news-portal/pkg/signer"
 )
 
-const jwtExpiredToken = 16
-
 var errNoCookie = errors.New("отсутствует cookie авторизации, необходимо авторизоваться")
 
 type ctxProfileKey string
@@ -22,7 +20,7 @@ func (h RESTHandler) auth(next http.Handler) http.Handler {
 		cookie, err := r.Cookie("authorization")
 		if err != nil {
 			if errors.Is(err, http.ErrNoCookie) {
-				h.mapErrToResponse(w, http.StatusForbidden, errNoCookie)
+				h.mapErrToResponse(w, http.StatusUnauthorized, errNoCookie)
 				return
 			}
 			h.mapErrToResponse(w, http.StatusInternalServerError, fmt.Errorf("ошибка при получении cookie"))

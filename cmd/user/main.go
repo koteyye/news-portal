@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -17,6 +18,8 @@ import (
 	"github.com/koteyye/news-portal/pkg/storage/postgres"
 	"github.com/koteyye/news-portal/server"
 	"golang.org/x/sync/errgroup"
+
+	_ "github.com/lib/pq"
 )
 
 const (
@@ -29,18 +32,27 @@ func main() {
 	g, gCtx := errgroup.WithContext(ctx)
 
 	cfg, err := config.GetConfig()
+	if err != nil {
+		log.Fatalf("can't get config")
+	}
 	logger := newLogger(cfg)
 	slog.SetDefault(logger)
-	if err != nil {
-		logger.Error(err.Error())
-		return
-	}
 
 	storage, err := postgres.NewStorage(cfg)
 	if err != nil {
 		logger.Error(err.Error())
+		return
+	}
+	err = storage.Up(ctx)
+	if err != nil {
+		logger.Error(err.Error())
+		return
 	}
 	minio, err := s3.InitS3Repo(cfg.S3Address, cfg.S3KeyID, cfg.SecretKey, false)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
 	service := service.NewService(storage, minio, logger)
 	signer := signer.New([]byte(cfg.SecretKey))
 	restHandler := resthandler.NewRESTHandler(service, logger, cfg.CorsAllowed, signer)

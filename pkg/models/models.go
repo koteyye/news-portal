@@ -11,3 +11,9 @@ type Profile struct {
 	AvatarID uuid.UUID `json:"avatar,omitempty"`
 	Roles []string `json:"roles,omitempty"`
 }
+
+type UserData struct {
+	Login string `json:"login"`
+	Password string `json:"password"`
+	Profile *Profile `json:"profile,omitempty"`
+}

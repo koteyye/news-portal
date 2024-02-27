@@ -1,14 +1,18 @@
 package resthandler
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 	"github.com/koteyye/news-portal/internal/user/service"
 	"github.com/koteyye/news-portal/pkg/signer"
 )
+
+const defaultTimeout = 10*time.Second
 
 // RESTHandler HTTP обработчик сервиса.
 type RESTHandler struct {
@@ -34,7 +38,7 @@ func (h RESTHandler) InitRoutes() *chi.Mux {
 	}))
 
 	r.Route("/api", func(r chi.Router) {
-		r.Route("health", func(r chi.Router) {
+		r.Route("/health", func(r chi.Router) {
 			r.Use(h.auth)
 			r.Get("/check", h.healthCheck)
 		})
@@ -51,7 +55,32 @@ func (h *RESTHandler) healthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) signUp(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
+	ctx, cancel := context.WithTimeout(r.Context(), defaultTimeout)
+	defer cancel()
+
+	input, err := parseUserdata(r.Body)
+	if err != nil {
+		h.mapErrToResponse(w, http.StatusBadRequest, err)
+		return
+	}
+	profile, err := h.service.SignUp(ctx, input)
+	if err != nil {
+		h.mapErrToResponse(w, http.StatusBadRequest, err)
+		return
+	}
+
+	token, err := h.signer.Sign(profile)
+	if err != nil {
+		h.mapErrToResponse(w, http.StatusInternalServerError, err)
+		return
+	}
+	cookie := &http.Cookie{
+		Name: "authorization",
+		Value: token,
+		Path: "/",
+	}
+	http.SetCookie(w, cookie)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (h *RESTHandler) signIn(w http.ResponseWriter, r *http.Request) {

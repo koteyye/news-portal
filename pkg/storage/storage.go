@@ -21,7 +21,7 @@ type Storage interface {
 // Authorization регистрация и авторизация пользователя.
 type Authorizarion interface {
 	// SignUp регистрация пользователя.
-	SignUp(ctx context.Context, login string, hashPassword string, profile *models.Profile) (*models.Profile, error)
+	SignUp(ctx context.Context, login string, hashPassword string) (uuid.UUID, error)
 
 	// SignIn авторизация пользователя
 	SignIn(ctx context.Context, login string, hashPassword string) (*models.Profile, error)
@@ -29,11 +29,14 @@ type Authorizarion interface {
 
 // Users CRUD операции над пользователем.
 type Users interface {
+	// CreateProfileByUserID создание профиль пользователя по UserID
+	CreateProfileByUserID(ctx context.Context, userID uuid.UUID, profile *models.Profile) error
+
 	// GetUserListByIDs получить список пользователей по ID.
 	GetUserListByIDs(ctx context.Context, userIDs []uuid.UUID) ([]*models.Profile, error)
 
 	// EditUserByID редактировать профиль пользователя по ID
-	EditUserByID(ctx context.Context, userID uuid.UUID) error
+	EditUserByID(ctx context.Context, userID uuid.UUID, profile *models.Profile) error
 
 	// DeleteUserByID удалить пользователя по ID
 	DeleteUserByID(ctx context.Context, userID uuid.UUID) error

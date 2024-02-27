@@ -77,16 +77,17 @@ func (c *Config) validate() error {
 	return nil
 }
 
-func (c *Config) configFromFile(filepath string) error {
+func configFromFile(filepath string) (*Config, error) {
+	var c Config
 	file, err := os.ReadFile(filepath)
 	if err != nil {
-		return fmt.Errorf("не удалось открыть файл конфигурации: %w", err)
+		return nil, fmt.Errorf("не удалось открыть файл конфигурации: %w", err)
 	}
 	err = json.Unmarshal(file, &c)
 	if err != nil {
-		return fmt.Errorf("не удалось десериализовать конфиг из файла: %w", err)
+		return nil, fmt.Errorf("не удалось десериализовать конфиг из файла: %w", err)
 	}
-	return nil
+	return &c, nil
 }
 
 // CIDR получение *IPNet из конфигурации
@@ -107,14 +108,20 @@ func GetConfig() (*Config, error) {
 	}
 	var config *Config
 	if envConfigPath.path != "" {
-		if err := config.configFromFile(envConfigPath.path); err != nil {
+		c, err := configFromFile(envConfigPath.path)
+		if err != nil {
 			return nil, err
 		}
+		config = c
 
-	} else {
-		if err := config.configFromFile(flagConfigPath); err != nil {
+	} else if flagConfigPath != "" {
+		c, err := configFromFile(flagConfigPath)
+		if err != nil {
 			return nil, err
 		}
+		config = c
+	} else {
+		return nil, errors.New("empty configpath")
 	}
 
 	if err := config.validate(); err != nil {

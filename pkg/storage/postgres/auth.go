@@ -2,35 +2,22 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
 
 	"github.com/gofrs/uuid"
 	"github.com/koteyye/news-portal/pkg/models"
 )
 
-func (s *Storage) SignUp(ctx context.Context, login string, hashPassword string, profile *models.Profile) (*models.Profile, error) {
+func (s *Storage) SignUp(ctx context.Context, login string, hashPassword string) (uuid.UUID, error) {
 	var userID uuid.UUID
 
 	query1 := "insert into users (login, hashed_password) values ($1, $2) returning id;"
 
-	query2 := "insert into profile (user_id, username, first_name, last_name, sur_name)"
+	err := s.db.QueryRowContext(ctx, query1, login, hashPassword).Scan(&userID)
+	if err != nil {
+		return uuid.Nil, errorHandle(err)
+	}
 
-	err := s.transaction(ctx, func(tx *sql.Tx) error {
-		err := tx.QueryRowContext(ctx, query1, login, hashPassword).Scan(userID)
-		if err != nil {
-			return fmt.Errorf("create user err: %w", errorHandle(err))
-		}
-
-		_, err = tx.ExecContext(ctx, query2, userID, profile.UserName, profile.LastName, profile.SurName)
-		if err != nil {
-			return fmt.Errorf("create uprofile err: %w", errorHandle(err))
-		}
-
-		return nil
-	})
-
-	return nil, err
+	return userID, nil
 }
 
 func (s *Storage) SignIn(ctx context.Context, login string, hashPassword string) (*models.Profile, error) {
