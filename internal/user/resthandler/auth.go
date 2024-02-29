@@ -3,9 +3,9 @@ package resthandler
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
+	resp "github.com/koteyye/news-portal/pkg/restresponser"
 	"github.com/koteyye/news-portal/pkg/signer"
 )
 
@@ -20,20 +20,20 @@ func (h RESTHandler) auth(next http.Handler) http.Handler {
 		cookie, err := r.Cookie("authorization")
 		if err != nil {
 			if errors.Is(err, http.ErrNoCookie) {
-				h.mapErrToResponse(w, http.StatusUnauthorized, errNoCookie)
+				resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusUnauthorized, Err: errNoCookie, ContentType: resp.CtJSON})
 				return
 			}
-			h.mapErrToResponse(w, http.StatusInternalServerError, fmt.Errorf("ошибка при получении cookie"))
+			resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusInternalServerError, Err: errors.New("can't get cookie"), ContentType: resp.CtJSON})
 			h.logger.Error(err.Error())
 			return
 		}
 		profile, err := h.signer.Parse(cookie.Value)
 		if err != nil {
 			if errors.Is(err, signer.ErrTokenExpired) {
-				h.mapErrToResponse(w, http.StatusUnauthorized, err)
+				resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusUnauthorized, Err: err, ContentType: resp.CtJSON})
 				return
 			}
-			h.mapErrToResponse(w, http.StatusInternalServerError, fmt.Errorf("ошибка при парсинге токена"))
+			resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusInternalServerError, Err: errors.New("token parse error"), ContentType: resp.CtJSON})
 			h.logger.Error(err.Error())
 			return
 		}

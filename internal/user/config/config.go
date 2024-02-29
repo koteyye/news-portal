@@ -13,7 +13,7 @@ import (
 )
 
 // ErrConfigValidate обрабатываемая ошибка конфигурации
-var ErrConfigValidate = errors.New("обязательные атрибуты конфигурации не заданы")
+var ErrConfigValidate = errors.New("required config attributes is empty")
 
 type configPath struct {
 	path string `env:"CONFIG_PATH"`
@@ -50,29 +50,41 @@ type Config struct {
 
 	// SecretKey ключ для подписания
 	SecretKey string `json:"secret_key"`
+
+	// AdminRESTAddress адрес REST-сервера админки
+	AdminRESTAddress string `json:"admin_address"`
+
+	// AdminTrustSubnet адрес довернной подсети админки
+	AdminTrustSubnet string `json:"admin_trust_subnet"`
 }
 
 func (c *Config) validate() error {
 	if c.RESTAddress == "" {
-		return fmt.Errorf("%w: не задан rest_address", ErrConfigValidate)
+		return fmt.Errorf("%w: rest_address", ErrConfigValidate)
 	}
 	if c.GRPCPort == "" {
-		return fmt.Errorf("%w: не задан grpc_port", ErrConfigValidate)
+		return fmt.Errorf("%w: grpc_port", ErrConfigValidate)
 	}
 	if c.DBDSN == "" {
-		return fmt.Errorf("%w: не задан db_dsn", ErrConfigValidate)
+		return fmt.Errorf("%w: db_dsn", ErrConfigValidate)
 	}
 	if c.S3Address == "" {
-		return fmt.Errorf("%w: не задан s3_address", ErrConfigValidate)
+		return fmt.Errorf("%w: s3_address", ErrConfigValidate)
 	}
 	if c.S3KeyID == "" {
-		return fmt.Errorf("%w: не задан s3_keyID", ErrConfigValidate)
+		return fmt.Errorf("%w: s3_keyID", ErrConfigValidate)
 	}
 	if c.TrustSubnet == "" {
-		return fmt.Errorf("%w: не задан trust_subnet", ErrConfigValidate)
+		return fmt.Errorf("%w: trust_subnet", ErrConfigValidate)
 	}
 	if c.SecretKey == "" {
-		return fmt.Errorf("%w: не задан secret_key", ErrConfigValidate)
+		return fmt.Errorf("%w: secret_key", ErrConfigValidate)
+	}
+	if c.AdminRESTAddress == "" {
+		return fmt.Errorf("%w: admin_address", ErrConfigValidate)
+	}
+	if c.AdminTrustSubnet == "" {
+		return fmt.Errorf("%w: admin_trust_subnet", ErrConfigValidate)
 	}
 	return nil
 }

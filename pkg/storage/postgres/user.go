@@ -90,3 +90,12 @@ func (s *Storage) DeleteUserByID(ctx context.Context, userID uuid.UUID) error {
 	//TOBE
 	return nil
 }
+
+func (s *Storage) SetUserRoles(ctx context.Context, userID uuid.UUID, roles []string) error {
+	query := "insert into user_roles (user_id, role_id) values ($1, $2)"
+	_, err := s.db.ExecContext(ctx, query, userID, pq.Array(roles))
+	if err != nil {
+		return errorHandle(err)
+	}
+	return nil
+}

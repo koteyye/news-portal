@@ -9,7 +9,10 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 	"github.com/koteyye/news-portal/internal/user/service"
+	"github.com/koteyye/news-portal/pkg/models"
 	"github.com/koteyye/news-portal/pkg/signer"
+
+	resp "github.com/koteyye/news-portal/pkg/restresponser"
 )
 
 const defaultTimeout = 10 * time.Second
@@ -58,20 +61,20 @@ func (h *RESTHandler) signUp(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), defaultTimeout)
 	defer cancel()
 
-	input, err := parseUserdata(r.Body)
+	input, err := models.ParseUserData(r.Body)
 	if err != nil {
-		h.mapErrToResponse(w, http.StatusBadRequest, err)
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
 		return
 	}
 	profile, err := h.service.SignUp(ctx, input)
 	if err != nil {
-		h.mapErrToResponse(w, http.StatusBadRequest, err)
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
 		return
 	}
 
 	token, err := h.signer.Sign(profile)
 	if err != nil {
-		h.mapErrToResponse(w, http.StatusInternalServerError, err)
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusInternalServerError, Err: err, ContentType: resp.CtJSON})
 		return
 	}
 	cookie := &http.Cookie{
@@ -87,19 +90,20 @@ func (h *RESTHandler) signIn(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), defaultTimeout)
 	defer cancel()
 
-	input, err := parseUserdata(r.Body)
+	input, err := models.ParseUserData(r.Body)
 	if err != nil {
-		h.mapErrToResponse(w, http.StatusBadRequest, err)
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
 		return
 	}
 	profile, err := h.service.SignIn(ctx, input)
 	if err != nil {
-		h.mapErrToResponse(w, http.StatusBadRequest, err)
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
 	}
 
 	token, err := h.signer.Sign(profile)
 	if err != nil {
-		h.mapErrToResponse(w, http.StatusInternalServerError, err)
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusInternalServerError, Err: err, ContentType: resp.CtJSON})
 		return
 	}
 	cookie := &http.Cookie{

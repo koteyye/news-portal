@@ -40,6 +40,8 @@ type Users interface {
 
 	// DeleteUserByID удалить пользователя по ID
 	DeleteUserByID(ctx context.Context, userID uuid.UUID) error
+
+	SetUserRoles(ctx context.Context, userID uuid.UUID, roles []string) error
 }
 
 // Avatar CRUD операции над аватаром пользователя

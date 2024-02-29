@@ -1,6 +1,12 @@
 package models
 
-import "github.com/gofrs/uuid"
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+
+	"github.com/gofrs/uuid"
+)
 
 const DefaultRole = "reader" // DefaultRole роль назначаемая по умолчанию новому пользователю.
 
@@ -20,4 +26,20 @@ type UserData struct {
 	Login    string   `json:"login"`
 	Password string   `json:"password"`
 	Profile  *Profile `json:"profile,omitempty"`
+}
+
+// ParseUserData сериализует UserData
+func ParseUserData(r io.Reader) (*UserData, error) {
+	var s UserData
+	err := json.NewDecoder(r).Decode(&s)
+	if err != nil {
+		return nil, fmt.Errorf("decoding the userdata: %w", err)
+	}
+	if s.Login == "" {
+		return nil, fmt.Errorf("login is empty")
+	}
+	if s.Password == "" {
+		return nil, fmt.Errorf("password is empty")
+	}
+	return &s, nil
 }
