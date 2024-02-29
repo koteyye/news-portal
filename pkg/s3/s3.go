@@ -17,8 +17,8 @@ type S3repo struct {
 
 // InitS3Repo возвращает новый экземпляр S3repo
 func InitS3Repo(endpoint string, accessKeyID string, secretKey string, useSSL bool) (*S3repo, error) {
-	client, err :=  minio.New(endpoint, &minio.Options{
-		Creds: credentials.NewStaticV4(accessKeyID, secretKey, ""),
+	client, err := minio.New(endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(accessKeyID, secretKey, ""),
 		Secure: useSSL,
 	})
 	return &S3repo{client: client}, err
@@ -32,7 +32,7 @@ func (s *S3repo) UploadFile(ctx context.Context, reader io.Reader, bucketName, f
 	}
 	mimeType, err := mimetype.DetectReader(reader)
 	if err != nil {
-		return  minio.UploadInfo{}, "", fmt.Errorf("не удалось определить тип загруженного файла: %w", err)
+		return minio.UploadInfo{}, "", fmt.Errorf("не удалось определить тип загруженного файла: %w", err)
 	}
 	return info, mimeType.String(), nil
 }

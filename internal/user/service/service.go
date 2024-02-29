@@ -10,8 +10,8 @@ import (
 // Service структура сервисного слоя
 type Service struct {
 	storage storage.Storage
-	s3 *s3.S3repo
-	logger *slog.Logger
+	s3      *s3.S3repo
+	logger  *slog.Logger
 }
 
 func NewService(storage storage.Storage, s3 *s3.S3repo, logger *slog.Logger) *Service {

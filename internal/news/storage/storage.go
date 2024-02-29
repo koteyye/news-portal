@@ -7,4 +7,4 @@ type Storage interface {
 	io.Closer
 
 	//TOBE
-} 
+}

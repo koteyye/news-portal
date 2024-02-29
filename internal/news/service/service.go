@@ -8,7 +8,7 @@ import (
 
 type Service struct {
 	storage storage.Storage
-	logger *slog.Logger
+	logger  *slog.Logger
 }
 
 func NewService(storage storage.Storage, logger *slog.Logger) *Service {

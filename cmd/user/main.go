@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/koteyye/news-portal/internal/user/config"
+	"github.com/koteyye/news-portal/internal/user/grpchandler"
 	"github.com/koteyye/news-portal/internal/user/resthandler"
 	"github.com/koteyye/news-portal/internal/user/service"
 	"github.com/koteyye/news-portal/pkg/s3"
@@ -18,8 +20,10 @@ import (
 	"github.com/koteyye/news-portal/pkg/storage/postgres"
 	"github.com/koteyye/news-portal/server"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
 
 	_ "github.com/lib/pq"
+	pb "github.com/koteyye/news-portal/proto"
 )
 
 const (
@@ -53,12 +57,27 @@ func main() {
 		logger.Error(err.Error())
 		return
 	}
+
+	var subnet *net.IPNet
+	if cfg.TrustSubnet != "" {
+		subnet, err = cfg.CIDR()
+		if err != nil {
+			logger.Error(err.Error())
+		}
+	}
+
 	service := service.NewService(storage, minio, logger)
 	signer := signer.New([]byte(cfg.SecretKey))
 	restHandler := resthandler.NewRESTHandler(service, logger, cfg.CorsAllowed, signer)
+	grpcHandler := grpchandler.InitGRPCHandlers(service, subnet)
 
 	g.Go(func() error {
 		runRESTServer(gCtx, cfg, restHandler, logger)
+		return nil
+	})
+
+	g.Go(func() error {
+		runGRPCServer(gCtx, cfg, grpcHandler, logger)
 		return nil
 	})
 
@@ -76,9 +95,10 @@ func newLogger(c *config.Config) *slog.Logger {
 func runRESTServer(ctx context.Context, cfg *config.Config, handler *resthandler.RESTHandler, log *slog.Logger) error {
 	restServer := new(server.Server)
 	go func() {
-		log.Info("выполняется запуск rest сервера")
+		log.Info(fmt.Sprintf("start rest server on %s", cfg.RESTAddress))
 		if err := restServer.Run(cfg.RESTAddress, handler.InitRoutes()); err != nil {
 			log.Error(err.Error())
+			return
 		}
 	}()
 
@@ -92,5 +112,32 @@ func runRESTServer(ctx context.Context, cfg *config.Config, handler *resthandler
 		return fmt.Errorf("не удалось отключить rest сервер: %w", err)
 	}
 
+	return nil
+}
+
+func runGRPCServer(ctx context.Context, cfg *config.Config, handler *grpchandler.GRPCHandler, log *slog.Logger) error {
+	opts := []grpc.ServerOption{
+		grpc.ChainUnaryInterceptor(
+			handler.SubnetInterceptor,
+		),
+	}
+	s := grpc.NewServer(opts...)
+	go func() {
+		listen, err := net.Listen("tcp", cfg.GRPCPort)
+		if err != nil {
+			log.Error(err.Error())
+			return
+		}
+		pb.RegisterUserServer(s, handler)
+		log.Info(fmt.Sprintf("start grpc server on %v", cfg.GRPCPort))
+		if err = s.Serve(listen); err != nil {
+			log.Error(err.Error())
+			return
+		}
+	}()
+
+	<-ctx.Done()
+	log.Info("shutting down grpc server")
+	s.GracefulStop()
 	return nil
 }

@@ -11,8 +11,8 @@ import (
 
 // RESTHandler HTTP обработчик сервиса.
 type RESTHandler struct {
-	service *service.Service
-	logger *slog.Logger
+	service     *service.Service
+	logger      *slog.Logger
 	corsAllowed []string
 }
 
@@ -21,7 +21,6 @@ func NewRESTHandler(service *service.Service, logger *slog.Logger, corsAllowed [
 	return &RESTHandler{service: service, logger: logger, corsAllowed: corsAllowed}
 }
 
-
 // InitRoutes инициализация mux.
 func (h RESTHandler) InitRoutes() *chi.Mux {
 	r := chi.NewRouter()
@@ -29,7 +28,7 @@ func (h RESTHandler) InitRoutes() *chi.Mux {
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: h.corsAllowed,
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETED"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
 	}))
 
 	r.Route("/api", func(r chi.Router) {

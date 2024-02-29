@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 
-	newsConfig "github.com/koteyye/news-portal/internal/news/config"
-	userConfig "github.com/koteyye/news-portal/internal/user/config"
 	newsMigration "github.com/koteyye/news-portal/db/news/migrations"
 	userMigration "github.com/koteyye/news-portal/db/user/migrations"
+	newsConfig "github.com/koteyye/news-portal/internal/news/config"
+	userConfig "github.com/koteyye/news-portal/internal/user/config"
 	"github.com/koteyye/news-portal/pkg/storage"
 )
 
@@ -17,7 +17,7 @@ var _ storage.Storage = (*Storage)(nil)
 
 // Storage определяет структуру хранилища.
 type Storage struct {
-	db *sql.DB
+	db  *sql.DB
 	cfg string
 }
 

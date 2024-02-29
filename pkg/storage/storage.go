@@ -16,7 +16,7 @@ type Storage interface {
 	Authorizarion
 	Users
 	Avatar
-} 
+}
 
 // Authorization регистрация и авторизация пользователя.
 type Authorizarion interface {

@@ -11,7 +11,7 @@ type Server struct {
 
 func (s *Server) Run(host string, handler http.Handler) error {
 	s.httpServer = &http.Server{
-		Addr: host,
+		Addr:    host,
 		Handler: handler,
 	}
 	return s.httpServer.ListenAndServe()

@@ -13,7 +13,7 @@ import (
 var ErrTokenExpired = errors.New("token is expired")
 
 const (
-	defaultTTL =  time.Hour * 12 // ttl базовое время жизни токена
+	defaultTTL = time.Hour * 12 // ttl базовое время жизни токена
 )
 
 type claims struct {
@@ -32,13 +32,13 @@ type Signer interface {
 
 type jwtSigner struct {
 	secret []byte
-	ttl time.Duration
+	ttl    time.Duration
 }
 
 func New(secret []byte) Signer {
 	return &jwtSigner{
 		secret: secret,
-		ttl: defaultTTL,
+		ttl:    defaultTTL,
 	}
 }
 
@@ -58,7 +58,7 @@ func (s *jwtSigner) Sign(payload *models.Profile) (string, error) {
 	return tokenString, nil
 }
 
-func (s *jwtSigner) Parse(token string) ( *models.Profile, error) {
+func (s *jwtSigner) Parse(token string) (*models.Profile, error) {
 	claims, err := s.parseToken(token)
 	if err != nil {
 		return nil, fmt.Errorf("token parsing: %w", err)

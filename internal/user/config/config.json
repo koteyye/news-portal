@@ -1,6 +1,6 @@
 {
     "rest_address": "localhost:8080",
-    "grpc_port": "3200",
+    "grpc_port": "localhost:3200",
     "log_level": "info",
     "db_dsn": "postgresql://postgres:postgres@localhost:5432/users?sslmode=disable",
     "s3_address": "minio:9001",

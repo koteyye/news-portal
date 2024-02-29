@@ -22,15 +22,15 @@ func (s *Service) SignUp(ctx context.Context, input *models.UserData) (*models.P
 		s.logger.Info(err.Error())
 		return nil, fmt.Errorf("can't create user: %w", err)
 	}
-	
+
 	if input.Profile == nil {
 		input.Profile = &models.Profile{UserName: input.Login}
 	}
 	err = s.storage.CreateProfileByUserID(ctx, userID, input.Profile)
-		if err != nil {
-			s.logger.Info(err.Error())
-			return nil, err
-		}
+	if err != nil {
+		s.logger.Info(err.Error())
+		return nil, err
+	}
 	input.Profile.ID = userID.String()
 	return input.Profile, nil
 }

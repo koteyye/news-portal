@@ -12,14 +12,14 @@ import (
 	"github.com/koteyye/news-portal/pkg/signer"
 )
 
-const defaultTimeout = 10*time.Second
+const defaultTimeout = 10 * time.Second
 
 // RESTHandler HTTP обработчик сервиса.
 type RESTHandler struct {
-	service *service.Service
-	logger *slog.Logger
+	service     *service.Service
+	logger      *slog.Logger
 	corsAllowed []string
-	signer signer.Signer
+	signer      signer.Signer
 }
 
 // NewRESTHandler получить новый экземпляр RESTHandler.
@@ -34,7 +34,7 @@ func (h RESTHandler) InitRoutes() *chi.Mux {
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: h.corsAllowed,
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETED"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
 	}))
 
 	r.Route("/api", func(r chi.Router) {
@@ -75,9 +75,9 @@ func (h *RESTHandler) signUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cookie := &http.Cookie{
-		Name: "authorization",
+		Name:  "authorization",
 		Value: token,
-		Path: "/",
+		Path:  "/",
 	}
 	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusCreated)
@@ -103,9 +103,9 @@ func (h *RESTHandler) signIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cookie := &http.Cookie{
-		Name: "authorization",
+		Name:  "authorization",
 		Value: token,
-		Path: "/",
+		Path:  "/",
 	}
 	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusOK)

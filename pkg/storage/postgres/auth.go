@@ -32,7 +32,6 @@ func (s *Storage) GetHashedPasswordByLogin(ctx context.Context, login string) (u
 	return userID, hashedPassword, nil
 }
 
-
 // id uuid not null default gen_random_uuid() primary key unique,
 //     user_id uuid not null,
 //     username varchar(512) not null,
