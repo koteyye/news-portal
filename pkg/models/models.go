@@ -2,6 +2,9 @@ package models
 
 import "github.com/gofrs/uuid"
 
+const DefaultRole = "reader" // DefaultRole роль назначаемая по умолчанию новому пользователю.
+
+// Profile профиль пользователя
 type Profile struct {
 	ID        string    `json:"userID,omitempty"`
 	UserName  string    `json:"userName"`
@@ -12,6 +15,7 @@ type Profile struct {
 	Roles     []string  `json:"roles,omitempty"`
 }
 
+// UserData пользовательские данные
 type UserData struct {
 	Login    string   `json:"login"`
 	Password string   `json:"password"`

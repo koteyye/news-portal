@@ -32,6 +32,7 @@ func (s *Service) SignUp(ctx context.Context, input *models.UserData) (*models.P
 		return nil, err
 	}
 	input.Profile.ID = userID.String()
+	input.Profile.Roles = append(input.Profile.Roles, models.DefaultRole)
 	return input.Profile, nil
 }
 
