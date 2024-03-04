@@ -53,9 +53,6 @@ type Config struct {
 
 	// AdminRESTAddress адрес REST-сервера админки
 	AdminRESTAddress string `json:"admin_address"`
-
-	// AdminTrustSubnet адрес довернной подсети админки
-	AdminTrustSubnet string `json:"admin_trust_subnet"`
 }
 
 func (c *Config) validate() error {
@@ -82,9 +79,6 @@ func (c *Config) validate() error {
 	}
 	if c.AdminRESTAddress == "" {
 		return fmt.Errorf("%w: admin_address", ErrConfigValidate)
-	}
-	if c.AdminTrustSubnet == "" {
-		return fmt.Errorf("%w: admin_trust_subnet", ErrConfigValidate)
 	}
 	return nil
 }

@@ -32,17 +32,60 @@ func (s *Service) CreateUser(ctx context.Context, data *models.UserData) (uuid.U
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("can't create profile: %w", err)
 	}
-	var addRoles []string
-	for _, role := range data.Profile.Roles {
-		if role != models.DefaultRole {
-			addRoles = append(addRoles, role)
-		}
-	}
+
+	addRoles := setRoles(data.Profile.Roles)
 	if len(addRoles) != 0 {
-		err := s.storage.SetUserRoles(ctx, userID, addRoles)
+		err := s.storage.SetUserRoles(ctx, userID, data.Profile.Roles)
 		if err != nil {
 			return uuid.Nil, fmt.Errorf("can't set role: %w", err)
 		}
 	}
 	return userID, nil
+}
+
+func (s *Service) EditUser(ctx context.Context, data *models.Profile) error {
+	err := s.storage.EditUserByID(ctx, data)
+	if err != nil {
+		s.logger.Error(err.Error())
+		return fmt.Errorf("can't edit user: %w", err)
+	}
+	addRoles := setRoles(data.Roles)
+	if len(addRoles) != 0 {
+		err := s.storage.SetUserRoles(ctx, uuid.FromStringOrNil(data.ID), data.Roles)
+		if err != nil {
+			return fmt.Errorf("can't set role: %w", err)
+		}
+	}
+	return nil
+}
+
+func (s *Service) DeleteUsersByIDs(ctx context.Context, userIDs []string) error {
+	userUUIDs := make([]uuid.UUID, 0, len(userIDs))
+	for _, userID := range userIDs {
+		userUUID, err := uuid.FromString(userID)
+		if err != nil {
+			s.logger.Error(err.Error())
+			return errors.New("can't parse userID")
+		}
+		userUUIDs = append(userUUIDs, userUUID)
+	}
+	err := s.storage.DeleteUserByIDs(ctx, userUUIDs)
+	if err != nil {
+		return fmt.Errorf("can't delete: %w", err)
+	}
+	return nil
+}
+
+func setRoles(roles []string) []string {
+	if len(roles) == 0 {
+		return roles
+	}
+
+	var addRoles []string
+	for _, role := range roles {
+		if role != models.DefaultRole {
+			addRoles = append(addRoles, role)
+		}
+	}
+	return addRoles
 }

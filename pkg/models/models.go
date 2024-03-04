@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
@@ -36,10 +37,26 @@ func ParseUserData(r io.Reader) (*UserData, error) {
 		return nil, fmt.Errorf("decoding the userdata: %w", err)
 	}
 	if s.Login == "" {
-		return nil, fmt.Errorf("login is empty")
+		return nil, errors.New("login is empty")
 	}
 	if s.Password == "" {
-		return nil, fmt.Errorf("password is empty")
+		return nil, errors.New("password is empty")
 	}
 	return &s, nil
+}
+
+// ParseProfile сериализует Profile
+func ParseProfile(r io.Reader) (*Profile, error) {
+	var p Profile
+	err := json.NewDecoder(r).Decode(&p)
+	if err != nil {
+		return nil, fmt.Errorf("decoding the profile: %w", err)
+	}
+	if p.ID == "" {
+		return nil, errors.New("userID is empty")
+	}
+	if p.UserName == "" {
+		return nil, errors.New("username is empty")
+	}
+	return &p, nil
 }

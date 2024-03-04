@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/gofrs/uuid"
@@ -13,7 +14,7 @@ import (
 func (s *Storage) GetUserListByIDs(ctx context.Context, userIDs []uuid.UUID) ([]*models.Profile, error) {
 	profiles := make([]*models.Profile, 0, len(userIDs))
 
-	query1 := "select user_id, username, first_name, last_name, sur_name from profile where user_id = ANY($1);"
+	query1 := "select user_id, username, first_name, last_name, sur_name from profile where user_id = ANY($1) and deleted_at is null;"
 	query2 := `select user_id, role_name from user_roles ur 
 	left join roles r on r.id = ur.role_id 
 	where ur.user_id = ANY($1);`
@@ -32,7 +33,9 @@ func (s *Storage) GetUserListByIDs(ctx context.Context, userIDs []uuid.UUID) ([]
 			}
 			profiles = append(profiles, &profile)
 		}
-
+		if len(profiles) == 0 {
+			return errors.New("value not found")
+		}
 		rows, err = s.db.QueryContext(ctx, query2, pq.Array(userIDs))
 		if err != nil {
 			return fmt.Errorf("can't get roles: %w", err)
@@ -80,19 +83,43 @@ func (s *Storage) CreateProfileByUserID(ctx context.Context, userID uuid.UUID, p
 	return nil
 }
 
-func (s *Storage) EditUserByID(ctx context.Context, userID uuid.UUID, profile *models.Profile) error {
-	//TOBE
+func (s *Storage) EditUserByID(ctx context.Context, profile *models.Profile) error {
+	query := `update profile
+	set username = $1, first_name = $2, last_name = $3, sur_name = $4
+	where user_id = $5;`
+
+	_, err := s.db.ExecContext(ctx, query, profile.UserName, profile.FirstName, profile.LastName, profile.SurName, profile.ID)
+	if err != nil {
+		return errorHandle(err)
+	}
 
 	return nil
 }
 
-func (s *Storage) DeleteUserByID(ctx context.Context, userID uuid.UUID) error {
-	//TOBE
+func (s *Storage) DeleteUserByIDs(ctx context.Context, userIDs []uuid.UUID) error {
+	query1 := "update users set deleted_at = now() where id = ANY($1);"
+	query2 := "update profile set deleted_at = now() where user_id = ANY($1)"
+	
+	err := s.transaction(ctx, func(tx *sql.Tx) error {
+		_, err := s.db.ExecContext(ctx, query1, pq.Array(userIDs))
+		if err != nil {
+			return fmt.Errorf("can't delete user: %w", err)
+		}
+
+		_, err = s.db.ExecContext(ctx, query2, pq.Array(userIDs))
+		if err != nil {
+			return fmt.Errorf("can't delete profile: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return errorHandle(err)
+	}
 	return nil
 }
 
 func (s *Storage) SetUserRoles(ctx context.Context, userID uuid.UUID, roles []string) error {
-	query := "insert into user_roles (user_id, role_id) values ($1, $2)"
+	query := "insert into user_roles (user_id, role_id) values ($1, $2);"
 	_, err := s.db.ExecContext(ctx, query, userID, pq.Array(roles))
 	if err != nil {
 		return errorHandle(err)

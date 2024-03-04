@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	adminresthandler "github.com/koteyye/news-portal/internal/user/admin_resthandler.go"
 	"github.com/koteyye/news-portal/internal/user/config"
 	"github.com/koteyye/news-portal/internal/user/grpchandler"
 	"github.com/koteyye/news-portal/internal/user/resthandler"
@@ -22,8 +23,8 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 
-	_ "github.com/lib/pq"
 	pb "github.com/koteyye/news-portal/proto"
+	_ "github.com/lib/pq"
 )
 
 const (
@@ -69,10 +70,16 @@ func main() {
 	service := service.NewService(storage, minio, logger)
 	signer := signer.New([]byte(cfg.SecretKey))
 	restHandler := resthandler.NewRESTHandler(service, logger, cfg.CorsAllowed, signer)
+	restAdminHandler := adminresthandler.NewAdminRESTHandler(service, logger, subnet)
 	grpcHandler := grpchandler.InitGRPCHandlers(service, subnet)
 
 	g.Go(func() error {
 		runRESTServer(gCtx, cfg, restHandler, logger)
+		return nil
+	})
+
+	g.Go(func() error {
+		runRESTServer(gCtx, cfg, restAdminHandler, logger)
 		return nil
 	})
 
@@ -92,15 +99,26 @@ func newLogger(c *config.Config) *slog.Logger {
 	return slog.New(handler)
 }
 
-func runRESTServer(ctx context.Context, cfg *config.Config, handler *resthandler.RESTHandler, log *slog.Logger) error {
+func runRESTServer(ctx context.Context, cfg *config.Config, restHandler any, log *slog.Logger) error {
 	restServer := new(server.Server)
-	go func() {
-		log.Info(fmt.Sprintf("start rest server on %s", cfg.RESTAddress))
-		if err := restServer.Run(cfg.RESTAddress, handler.InitRoutes()); err != nil {
-			log.Error(err.Error())
-			return
-		}
-	}()
+	switch handler := restHandler.(type) {
+	case *resthandler.RESTHandler:
+		go func() {
+			log.Info(fmt.Sprintf("start rest server on %s", cfg.RESTAddress))
+			if err := restServer.Run(cfg.RESTAddress, handler.InitRoutes()); err != nil {
+				log.Error(err.Error())
+				return
+			}
+		}()
+	case *adminresthandler.AdminRESTHandler:
+		go func() {
+			log.Info(fmt.Sprintf("start admin rest server on %s", cfg.AdminRESTAddress))
+			if err := restServer.Run(cfg.RESTAddress, handler.InitRoutes()); err != nil {
+				log.Error(err.Error())
+				return
+			}
+		}()
+	}
 
 	<-ctx.Done()
 

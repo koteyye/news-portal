@@ -36,10 +36,10 @@ type Users interface {
 	GetUserListByIDs(ctx context.Context, userIDs []uuid.UUID) ([]*models.Profile, error)
 
 	// EditUserByID редактировать профиль пользователя по ID
-	EditUserByID(ctx context.Context, userID uuid.UUID, profile *models.Profile) error
+	EditUserByID(ctx context.Context, profile *models.Profile) error
 
 	// DeleteUserByID удалить пользователя по ID
-	DeleteUserByID(ctx context.Context, userID uuid.UUID) error
+	DeleteUserByIDs(ctx context.Context, userIDs []uuid.UUID) error
 
 	SetUserRoles(ctx context.Context, userID uuid.UUID, roles []string) error
 }
