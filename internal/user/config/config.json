@@ -1,6 +1,6 @@
 {
-    "rest_address": "localhost:8080",
-    "admin_address": "localhost:8081",
+    "rest_address": "localhost:8083",
+    "admin_address": "localhost:8084",
     "grpc_port": "localhost:3200",
     "log_level": "info",
     "db_dsn": "postgresql://postgres:postgres@localhost:5432/users?sslmode=disable",
@@ -8,7 +8,7 @@
     "s3_keyID": "6ADqzf2u05zn04xE",
     "s3_secretKey": "vpAuDE2Zb3zyxMdsaq176QQ5xiTk7Tcp",
     "trust_subnet": "127.0.0.1/24",
-    "cors_allowed": ["http://localhost:8081"],
+    "cors_allowed": ["http://localhost:8083"],
     "secret_key": "supersecretkey"
 }
 

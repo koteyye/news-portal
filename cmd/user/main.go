@@ -122,12 +122,12 @@ func runRESTServer(ctx context.Context, cfg *config.Config, restHandler any, log
 
 	<-ctx.Done()
 
-	log.Info("выполняется выключение rest сервера")
+	log.Info("shutting down rest server")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
 	if err := restServer.Shutdown(shutdownCtx); err != nil {
-		return fmt.Errorf("не удалось отключить rest сервер: %w", err)
+		return fmt.Errorf("can't shutdown rest server: %w", err)
 	}
 
 	return nil

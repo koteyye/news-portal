@@ -67,7 +67,7 @@ func (s *Storage) CreateProfileByUserID(ctx context.Context, userID uuid.UUID, p
 	query2 := "insert into user_roles (user_id, role_id) values ($1, (select id from roles where role_name = $2));"
 
 	err := s.transaction(ctx, func(tx *sql.Tx) error {
-		_, err := s.db.ExecContext(ctx, query1, profile.UserName, profile.FirstName, profile.LastName, profile.SurName)
+		_, err := s.db.ExecContext(ctx, query1, userID, profile.UserName, profile.FirstName, profile.LastName, profile.SurName)
 		if err != nil {
 			return fmt.Errorf("can't insert profile: %w", err)
 		}

@@ -29,6 +29,7 @@ func NewAdminRESTHandler(service *service.Service, logger *slog.Logger, subnet *
 	return &AdminRESTHandler{service: service, logger: logger, subnet: subnet}
 }
 
+// InitRoutes 
 func (h AdminRESTHandler) InitRoutes() *chi.Mux {
 	r := chi.NewRouter()
 
