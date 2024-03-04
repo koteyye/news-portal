@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -105,7 +107,7 @@ func runRESTServer(ctx context.Context, cfg *config.Config, restHandler any, log
 	case *resthandler.RESTHandler:
 		go func() {
 			log.Info(fmt.Sprintf("start rest server on %s", cfg.RESTAddress))
-			if err := restServer.Run(cfg.RESTAddress, handler.InitRoutes()); err != nil {
+			if err := restServer.Run(cfg.RESTAddress, handler.InitRoutes()); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				log.Error(err.Error())
 				return
 			}
@@ -113,7 +115,7 @@ func runRESTServer(ctx context.Context, cfg *config.Config, restHandler any, log
 	case *adminresthandler.AdminRESTHandler:
 		go func() {
 			log.Info(fmt.Sprintf("start admin rest server on %s", cfg.AdminRESTAddress))
-			if err := restServer.Run(cfg.RESTAddress, handler.InitRoutes()); err != nil {
+			if err := restServer.Run(cfg.AdminRESTAddress, handler.InitRoutes()); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				log.Error(err.Error())
 				return
 			}
