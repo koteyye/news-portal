@@ -1,24 +1,40 @@
 package resthandler
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
+	"github.com/gofrs/uuid"
+	"github.com/koteyye/news-portal/pkg/models"
+	"github.com/koteyye/news-portal/pkg/signer"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 	"github.com/koteyye/news-portal/internal/news/service"
+
+	resp "github.com/koteyye/news-portal/pkg/restresponser"
 )
 
 // RESTHandler HTTP обработчик сервиса.
 type RESTHandler struct {
 	service     *service.Service
 	logger      *slog.Logger
+	signer      signer.Signer
 	corsAllowed []string
 }
 
+const (
+	newsKeyFile    = "newsFile"
+	newsKeyAttr    = "newsAttr"
+	previewKeyFile = "previewFile"
+)
+
 // NewRESTHandler получить новый экземпляр RESTHandler.
-func NewRESTHandler(service *service.Service, logger *slog.Logger, corsAllowed []string) *RESTHandler {
-	return &RESTHandler{service: service, logger: logger, corsAllowed: corsAllowed}
+func NewRESTHandler(service *service.Service, logger *slog.Logger, corsAllowed []string, signer signer.Signer) *RESTHandler {
+	return &RESTHandler{service: service, logger: logger, corsAllowed: corsAllowed, signer: signer}
 }
 
 // InitRoutes инициализация mux.
@@ -30,6 +46,7 @@ func (h RESTHandler) InitRoutes() *chi.Mux {
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETED"},
 		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
 	}))
+	r.Use(h.auth)
 
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/news", func(r chi.Router) {
@@ -70,7 +87,44 @@ func (h *RESTHandler) getNewsByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) createNews(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	profile := ctx.Value(profileIDKey).(*models.Profile)
+
+	newsFile, newsFileHeader, err := getFileFromMultipartform(w, r, newsKeyFile)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+
+	previewFile, previewFileHeader, err := getFileFromMultipartform(w, r, previewKeyFile)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusInternalServerError, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+
+	attr := r.FormValue(newsKeyAttr)
+	var newsAttribues models.NewsAttributes
+
+	err = json.Unmarshal([]byte(attr), &newsAttribues)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusInternalServerError, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+
+	newsID, err := h.service.CreateNews(ctx, &newsAttribues, newsFile, newsFileHeader, previewFile, previewFileHeader, profile.ID)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusInternalServerError, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	err = json.NewEncoder(w).Encode(map[string]uuid.UUID{"news_id": newsID})
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusInternalServerError, Err: err, ContentType: resp.CtJSON})
+		return
+	}
 }
 
 func (h *RESTHandler) editNews(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +164,21 @@ func (h *RESTHandler) deleteComment(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) me(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	profile := ctx.Value(profileIDKey).(*models.Profile)
+	if profile == nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusInternalServerError, Err: errors.New("profile is empty"), ContentType: resp.CtJSON})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	err := json.NewEncoder(w).Encode(profile)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusInternalServerError, Err: err, ContentType: resp.CtJSON})
+		return
+	}
 }
 
 func (h *RESTHandler) editProfile(w http.ResponseWriter, r *http.Request) {

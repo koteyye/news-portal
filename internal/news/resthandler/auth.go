@@ -3,10 +3,9 @@ package resthandler
 import (
 	"context"
 	"errors"
-	"net/http"
-
 	resp "github.com/koteyye/news-portal/pkg/restresponser"
 	"github.com/koteyye/news-portal/pkg/signer"
+	"net/http"
 )
 
 var errNoCookie = errors.New("auth cookie is empty")

@@ -2,8 +2,16 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/koteyye/news-portal/pkg/s3"
+	"github.com/koteyye/news-portal/pkg/signer"
+	pb "github.com/koteyye/news-portal/proto"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"log"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,9 +20,11 @@ import (
 	"github.com/koteyye/news-portal/internal/news/config"
 	"github.com/koteyye/news-portal/internal/news/resthandler"
 	"github.com/koteyye/news-portal/internal/news/service"
-	"github.com/koteyye/news-portal/internal/news/storage/postgres"
+	"github.com/koteyye/news-portal/pkg/storage/postgres"
 	"github.com/koteyye/news-portal/server"
 	"golang.org/x/sync/errgroup"
+
+	_ "github.com/lib/pq"
 )
 
 const (
@@ -27,19 +37,36 @@ func main() {
 	g, gCtx := errgroup.WithContext(ctx)
 
 	cfg, err := config.GetConfig()
+	if err != nil {
+		log.Fatalf("can't get config")
+	}
 	logger := newLogger(cfg)
 	slog.SetDefault(logger)
-	if err != nil {
-		logger.Error(err.Error())
-		return
-	}
 
 	storage, err := postgres.NewStorage(cfg)
 	if err != nil {
 		logger.Error(err.Error())
+		return
 	}
-	service := service.NewService(storage, logger)
-	restHandler := resthandler.NewRESTHandler(service, logger, cfg.CorsAllowed)
+	err = storage.Up(ctx)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+	minio, err := s3.InitS3Repo(cfg.S3Address, cfg.S3KeyID, cfg.SecretKey, false)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+	connect, err := grpc.Dial(cfg.UserServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+	userClient := pb.NewUserClient(connect)
+	newService := service.NewService(storage, minio, logger, userClient)
+	newSigner := signer.New([]byte(cfg.SecretKey))
+	restHandler := resthandler.NewRESTHandler(newService, logger, cfg.CorsAllowed, newSigner)
 
 	g.Go(func() error {
 		runRESTServer(gCtx, cfg, restHandler, logger)
@@ -60,20 +87,20 @@ func newLogger(c *config.Config) *slog.Logger {
 func runRESTServer(ctx context.Context, cfg *config.Config, handler *resthandler.RESTHandler, log *slog.Logger) error {
 	restServer := new(server.Server)
 	go func() {
-		log.Info("выполняется запуск rest сервера")
-		if err := restServer.Run(cfg.RESTAddress, handler.InitRoutes()); err != nil {
+		log.Info(fmt.Sprintf("start rest server on %s", cfg.RESTAddress))
+		if err := restServer.Run(cfg.RESTAddress, handler.InitRoutes()); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Error(err.Error())
 		}
 	}()
 
 	<-ctx.Done()
 
-	log.Info("выполняется выключение rest сервера")
+	log.Info("shutting down rest server")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
 	if err := restServer.Shutdown(shutdownCtx); err != nil {
-		return fmt.Errorf("не удалось отключить rest сервер: %w", err)
+		return fmt.Errorf("can't shutdown rest server: %w", err)
 	}
 
 	return nil

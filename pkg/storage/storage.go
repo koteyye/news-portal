@@ -16,6 +16,7 @@ type Storage interface {
 	Authorizarion
 	Users
 	Avatar
+	News
 }
 
 // Authorization регистрация и авторизация пользователя.
@@ -51,6 +52,11 @@ type Users interface {
 // Avatar CRUD операции над аватаром пользователя
 type Avatar interface {
 	// TOBE
+}
+
+type News interface {
+	//CreateNews создание новости
+	CreateNews(ctx context.Context, newsAttr *models.NewsAttributes) (uuid.UUID, error)
 }
 
 // ошибки storage

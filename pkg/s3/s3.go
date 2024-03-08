@@ -28,11 +28,11 @@ func InitS3Repo(endpoint string, accessKeyID string, secretKey string, useSSL bo
 func (s *S3repo) UploadFile(ctx context.Context, reader io.Reader, bucketName, filename string, fileSize int64) (minio.UploadInfo, string, error) {
 	info, err := s.client.PutObject(ctx, bucketName, filename, reader, fileSize, minio.PutObjectOptions{})
 	if err != nil {
-		return minio.UploadInfo{}, "", fmt.Errorf("не удалось загрузить файл в хранилище: %w", err)
+		return minio.UploadInfo{}, "", fmt.Errorf("can't upload file in storage: %w", err)
 	}
 	mimeType, err := mimetype.DetectReader(reader)
 	if err != nil {
-		return minio.UploadInfo{}, "", fmt.Errorf("не удалось определить тип загруженного файла: %w", err)
+		return minio.UploadInfo{}, "", fmt.Errorf("can't check type file: %w", err)
 	}
 	return info, mimeType.String(), nil
 }

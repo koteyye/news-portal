@@ -29,6 +29,23 @@ type UserData struct {
 	Profile  *Profile `json:"profile,omitempty"`
 }
 
+type NewsAttributes struct {
+	ID          string `json:"news_id,omitempty"`
+	Title       string `json:"title"`
+	Author      string `json:"author,omitempty"`
+	Description string `json:"description"`
+	Content     *File  `json:"content_id,omitempty"`
+	Preview     *File  `json:"preview_id,omitempty"`
+	State       string `json:"state,omitempty"`
+}
+
+type File struct {
+	ID         string `json:"file_id"`
+	MimeType   string `json:"mime_type"`
+	BucketName string `json:"bucket_name"`
+	FileName   string `json:"file_name"`
+}
+
 // ParseUserData сериализует UserData
 func ParseUserData(r io.Reader) (*UserData, error) {
 	var s UserData
