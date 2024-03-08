@@ -51,7 +51,7 @@ create table if not exists user_roles (
 );
 comment on table user_roles is 'связь m2m пользователя и роли';
 
-insert into roles (role_name) values ('reader');
+insert into roles (role_name) values ('reader'), ('writer');
 -- +goose StatementEnd
 
 -- +goose Down

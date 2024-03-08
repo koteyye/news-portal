@@ -20,8 +20,8 @@ const defaultTimeout = 10 * time.Second
 // AdminRESTHandler HTTP обработчик админки сервиса.
 type AdminRESTHandler struct {
 	service *service.Service
-	logger *slog.Logger
-	subnet *net.IPNet
+	logger  *slog.Logger
+	subnet  *net.IPNet
 }
 
 // NewAdminRESTHandler возвращает новый экземпляр AdminRESTHandler
@@ -29,7 +29,7 @@ func NewAdminRESTHandler(service *service.Service, logger *slog.Logger, subnet *
 	return &AdminRESTHandler{service: service, logger: logger, subnet: subnet}
 }
 
-// InitRoutes 
+// InitRoutes инициализирует роуты админки
 func (h AdminRESTHandler) InitRoutes() *chi.Mux {
 	r := chi.NewRouter()
 
@@ -47,16 +47,16 @@ func (h AdminRESTHandler) InitRoutes() *chi.Mux {
 func (h *AdminRESTHandler) createUser(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), defaultTimeout)
 	defer cancel()
-	
+
 	input, err := models.ParseUserData(r.Body)
 	if err != nil {
 		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
-		return 
+		return
 	}
 	userID, err := h.service.CreateUser(ctx, input)
 	if err != nil {
 		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
-		return 
+		return
 	}
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"userID": userID.String()})
@@ -69,13 +69,13 @@ func (h *AdminRESTHandler) editUserByID(w http.ResponseWriter, r *http.Request) 
 	input, err := models.ParseProfile(r.Body)
 	if err != nil {
 		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
-		return 
+		return
 	}
 
 	err = h.service.EditUser(ctx, input)
 	if err != nil {
 		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
-		return 
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -88,13 +88,13 @@ func (h *AdminRESTHandler) deleteUserByIDs(w http.ResponseWriter, r *http.Reques
 	err := json.NewDecoder(r.Body).Decode(&userIds)
 	if err != nil {
 		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
-		return 
+		return
 	}
 
 	err = h.service.DeleteUsersByIDs(ctx, userIds)
 	if err != nil {
 		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
-		return 
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 }

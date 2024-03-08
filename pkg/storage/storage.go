@@ -41,7 +41,11 @@ type Users interface {
 	// DeleteUserByID удалить пользователя по ID
 	DeleteUserByIDs(ctx context.Context, userIDs []uuid.UUID) error
 
+	// SetUserRoles устанавливает роли пользователю
 	SetUserRoles(ctx context.Context, userID uuid.UUID, roles []string) error
+
+	// EditRole удаляет текущие роли пользователя и добавляет новые
+	EditRoles(ctx context.Context, userID uuid.UUID, roles []string) error
 }
 
 // Avatar CRUD операции над аватаром пользователя

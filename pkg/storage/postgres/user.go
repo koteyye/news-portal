@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/gofrs/uuid"
 	"github.com/koteyye/news-portal/pkg/models"
@@ -99,7 +100,7 @@ func (s *Storage) EditUserByID(ctx context.Context, profile *models.Profile) err
 func (s *Storage) DeleteUserByIDs(ctx context.Context, userIDs []uuid.UUID) error {
 	query1 := "update users set deleted_at = now() where id = ANY($1);"
 	query2 := "update profile set deleted_at = now() where user_id = ANY($1)"
-	
+
 	err := s.transaction(ctx, func(tx *sql.Tx) error {
 		_, err := s.db.ExecContext(ctx, query1, pq.Array(userIDs))
 		if err != nil {
@@ -119,8 +120,102 @@ func (s *Storage) DeleteUserByIDs(ctx context.Context, userIDs []uuid.UUID) erro
 }
 
 func (s *Storage) SetUserRoles(ctx context.Context, userID uuid.UUID, roles []string) error {
-	query := "insert into user_roles (user_id, role_id) values ($1, $2);"
-	_, err := s.db.ExecContext(ctx, query, userID, pq.Array(roles))
+	roleIDs := make([]uuid.UUID, 0, len(roles))
+
+	query1 := "select id from roles where role_name = ANY($1)"
+
+	query := `insert into user_roles (user_id, role_id) values `
+
+	err := s.transaction(ctx, func(tx *sql.Tx) error {
+		rows, err := s.db.QueryContext(ctx, query1, pq.Array(roles))
+		if err != nil {
+			return fmt.Errorf("can't get role id from role_name: %w", err)
+		}
+		for rows.Next() {
+			var roleID uuid.UUID
+			err = rows.Scan(&roleID)
+			if err != nil {
+				return fmt.Errorf("can't scan role ID: %w", err)
+			}
+			roleIDs = append(roleIDs, roleID)
+		}
+
+		var values []interface{}
+		for i, roleID := range roleIDs {
+			values = append(values, userID, roleID)
+
+			numFields := 2
+			n := i * numFields
+
+			query += `(`
+			for j := 0; j < numFields; j++ {
+				query += `$` + strconv.Itoa(n+j+1) + `,`
+			}
+			query = query[:len(query)-1] + `),`
+		}
+		query = query[:len(query)-1]
+
+		_, err = s.db.ExecContext(ctx, query, values...)
+		if err != nil {
+			return fmt.Errorf("can't insert user_roles: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return errorHandle(err)
+	}
+	return nil
+}
+
+func (s *Storage) EditRoles(ctx context.Context, userID uuid.UUID, roles []string) error {
+	roleIDs := make([]uuid.UUID, 0, len(roles))
+
+	queryDel := `delete from user_roles where user_id = $1`
+
+	query1 := "select id from roles where role_name = ANY($1)"
+
+	query := `insert into user_roles (user_id, role_id) values`
+
+	err := s.transaction(ctx, func(tx *sql.Tx) error {
+		_, err := s.db.ExecContext(ctx, queryDel, userID)
+		if err != nil {
+			return fmt.Errorf("can't delete current user_roles: %w", err)
+		}
+
+		rows, err := s.db.QueryContext(ctx, query1, pq.Array(roles))
+		if err != nil {
+			return fmt.Errorf("can't get role id from role_name: %w", err)
+		}
+		for rows.Next() {
+			var roleID uuid.UUID
+			err = rows.Scan(&roleID)
+			if err != nil {
+				return fmt.Errorf("can't scan role ID: %w", err)
+			}
+			roleIDs = append(roleIDs, roleID)
+		}
+
+		var values []interface{}
+		for i, roleID := range roleIDs {
+			values = append(values, userID, roleID)
+
+			numFields := 2
+			n := i * numFields
+
+			query += `(`
+			for j := 0; j < numFields; j++ {
+				query += `$` + strconv.Itoa(n+j+1) + `,`
+			}
+			query = query[:len(query)-1] + `),`
+		}
+		query = query[:len(query)-1]
+
+		_, err = s.db.ExecContext(ctx, query, values...)
+		if err != nil {
+			return fmt.Errorf("can't insert user_roles: %w", err)
+		}
+		return nil
+	})
 	if err != nil {
 		return errorHandle(err)
 	}

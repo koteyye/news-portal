@@ -51,7 +51,7 @@ func (s *Service) EditUser(ctx context.Context, data *models.Profile) error {
 	}
 	addRoles := setRoles(data.Roles)
 	if len(addRoles) != 0 {
-		err := s.storage.SetUserRoles(ctx, uuid.FromStringOrNil(data.ID), data.Roles)
+		err := s.storage.EditRoles(ctx, uuid.FromStringOrNil(data.ID), data.Roles)
 		if err != nil {
 			return fmt.Errorf("can't set role: %w", err)
 		}
