@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	newsMigration "github.com/koteyye/news-portal/db/news/migrations"
-	userMigration "github.com/koteyye/news-portal/db/user/migrations"
+	"github.com/koteyye/news-portal/db/news/migrations"
+	"github.com/koteyye/news-portal/db/user/migrations"
 	newsConfig "github.com/koteyye/news-portal/internal/news/config"
 	userConfig "github.com/koteyye/news-portal/internal/user/config"
 	"github.com/koteyye/news-portal/pkg/storage"
@@ -29,7 +29,7 @@ const (
 func NewNewsStorage(c *newsConfig.Config) (*Storage, error) {
 	db, err := connect(c.DBDSN)
 	if err != nil {
-		return nil, fmt.Errorf("не удалось подключиться к бд: %w", err)
+		return nil, fmt.Errorf("can't connect to db: %w", err)
 	}
 	return &Storage{db: db}, nil
 }
@@ -46,11 +46,11 @@ func NewStorage(c any) (*Storage, error) {
 		dbdsn = conf.DBDSN
 		storage.cfg = cfgUser
 	default:
-		return nil, errors.New("не удалось получить dbdsn")
+		return nil, errors.New("can't get dbdsn")
 	}
 	db, err := connect(dbdsn)
 	if err != nil {
-		return nil, fmt.Errorf("не удалось подключиться к бд: %w", err)
+		return nil, fmt.Errorf("can't connect to db: %w", err)
 	}
 	storage.db = db
 	return &storage, nil
@@ -59,12 +59,12 @@ func NewStorage(c any) (*Storage, error) {
 func connect(dsn string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("не удалось создать подключение к бд: %w", err)
+		return nil, fmt.Errorf("can't create connecting to db: %w", err)
 	}
 
 	if err = db.Ping(); err != nil {
 		_ = db.Close()
-		return nil, fmt.Errorf("не удалось пингануть бд: %w", err)
+		return nil, fmt.Errorf("can't ping db: %w", err)
 	}
 
 	return db, nil
@@ -76,16 +76,16 @@ func (s *Storage) Close() error {
 
 func (s *Storage) Up(ctx context.Context) error {
 	if s.cfg == cfgNews {
-		return newsMigration.Up(ctx, s.db)
+		return newsmigration.Up(ctx, s.db)
 	}
-	return userMigration.Up(ctx, s.db)
+	return usermigration.Up(ctx, s.db)
 }
 
 func (s *Storage) Down(ctx context.Context) error {
 	if s.cfg == cfgNews {
-		return newsMigration.Down(ctx, s.db)
+		return newsmigration.Down(ctx, s.db)
 	}
-	return userMigration.Down(ctx, s.db)
+	return usermigration.Down(ctx, s.db)
 }
 
 func (s *Storage) transaction(

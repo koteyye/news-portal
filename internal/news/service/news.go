@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/gofrs/uuid"
+	pb "github.com/koteyye/news-portal/proto"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/koteyye/news-portal/pkg/models"
 	"mime/multipart"
@@ -62,7 +64,7 @@ func (s *Service) CreateNews(ctx context.Context,
 			FileName:   previewFileName,
 		}
 	}
-	newsAttr.Author = userID
+	newsAttr.Author.ID = userID
 
 	newsID, err := s.storage.CreateNews(ctx, newsAttr)
 	if err != nil {
@@ -70,4 +72,83 @@ func (s *Service) CreateNews(ctx context.Context,
 	}
 
 	return newsID, nil
+}
+
+func (s *Service) GetNewsByIDs(ctx context.Context, newsIDs []uuid.UUID) ([]*models.NewsAttributes, error) {
+	news, err := s.storage.GetNewsByIDs(ctx, newsIDs)
+	if err != nil {
+		return nil, fmt.Errorf("can't get news: %w", err)
+	}
+
+	var userIDs []string
+	for _, newsItem := range news {
+		userIDs = append(userIDs, newsItem.Author.ID)
+		if newsItem.UserCreated.ID != newsItem.Author.ID {
+			userIDs = append(userIDs, newsItem.UserCreated.ID)
+		}
+		if newsItem.UserUpdated.ID != newsItem.Author.ID {
+			userIDs = append(userIDs, newsItem.UserUpdated.ID)
+		}
+	}
+	md := metadata.New(map[string]string{"X-Real-IP": s.serverAddress})
+	ctx = metadata.NewOutgoingContext(ctx, md)
+	w, err := s.userClient.GetUserByIDs(ctx, &pb.UserByIDsRequest{Userids: userIDs})
+	if err != nil {
+		return nil, fmt.Errorf("can't get user info: %w", err)
+	}
+	news = userAppend(news, w.Users)
+
+	return news, nil
+}
+
+func (s *Service) GetNewsList(ctx context.Context, limit int, offset int) ([]*models.NewsAttributes, error) {
+	news, err := s.storage.GetNewsList(ctx, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("can't get news list: %w", err)
+	}
+
+	var userIDs []string
+	for _, newsItem := range news {
+		userIDs = append(userIDs, newsItem.Author.ID)
+		if newsItem.UserCreated.ID != newsItem.Author.ID {
+			userIDs = append(userIDs, newsItem.UserCreated.ID)
+		}
+		if newsItem.UserUpdated.ID != newsItem.Author.ID {
+			userIDs = append(userIDs, newsItem.UserUpdated.ID)
+		}
+	}
+	md := metadata.New(map[string]string{"X-Real-IP": s.serverAddress})
+	ctx = metadata.NewOutgoingContext(ctx, md)
+	w, err := s.userClient.GetUserByIDs(ctx, &pb.UserByIDsRequest{Userids: userIDs})
+	if err != nil {
+		return nil, fmt.Errorf("can't get user info: %w", err)
+	}
+	news = userAppend(news, w.Users)
+
+	return news, nil
+}
+
+func userAppend(news []*models.NewsAttributes, users []*pb.Users) []*models.NewsAttributes {
+	for _, newsItem := range news {
+		for _, user := range users {
+			user := models.Profile{
+				ID:        user.UserID,
+				UserName:  user.Username,
+				FirstName: user.Firstname,
+				LastName:  user.Lastname,
+				SurName:   user.Surname,
+				AvatarID:  uuid.FromStringOrNil(user.Avatar),
+			}
+			if newsItem.Author.ID == user.ID {
+				newsItem.Author = &user
+			}
+			if newsItem.UserCreated.ID == user.ID {
+				newsItem.UserCreated = &user
+			}
+			if newsItem.UserUpdated.ID == user.ID {
+				newsItem.UserUpdated = &user
+			}
+		}
+	}
+	return news
 }

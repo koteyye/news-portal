@@ -17,7 +17,7 @@ import (
 // GRPCHandler структура GRPC обработчика
 type GRPCHandler struct {
 	service *service.Service
-	subnet *net.IPNet
+	subnet  *net.IPNet
 	pb.UserServer
 }
 
@@ -42,12 +42,13 @@ func (g *GRPCHandler) GetUserByIDs(ctx context.Context, in *pb.UserByIDsRequest)
 	userResponse := make([]*pb.Users, 0, len(userProfiles))
 	for _, profile := range userProfiles {
 		userResponse = append(userResponse, &pb.Users{
-			Username: profile.UserName,
+			UserID:    profile.ID,
+			Username:  profile.UserName,
 			Firstname: profile.FirstName,
-			Lastname: profile.LastName,
-			Surname: profile.SurName,
-			Avatar: profile.AvatarID.String(),
-			Roles: profile.Roles,
+			Lastname:  profile.LastName,
+			Surname:   profile.SurName,
+			Avatar:    profile.AvatarID.String(),
+			Roles:     profile.Roles,
 		})
 	}
 	return &pb.UserByIDsResponse{Users: userResponse}, nil

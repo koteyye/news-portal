@@ -1,11 +1,11 @@
 {
-    "rest_address": "localhost:8085",
+    "rest_address": "127.0.0.1:8085",
     "user_service_address": "localhost:3200",
     "log_level": "info",
     "db_dsn": "postgresql://postgres:postgres@localhost:5433/news?sslmode=disable",
-    "s3_address": "minio:9000",
-    "s3_keyID": "6ADqzf2u05zn04xE",
-    "s3_secretKey": "vpAuDE2Zb3zyxMdsaq176QQ5xiTk7Tcp",
+    "s3_address": "127.0.0.1:9000",
+    "s3_keyID": "BTviNoT5vb3qiXEP",
+    "s3_secretKey": "b2jl46Iqc9FAH4vDoJlr0y6HlHSkLPnc",
     "cors_allowed": ["http://localhost:8083"],
     "secret_key": "supersecretkey"
 }

@@ -57,6 +57,12 @@ type Avatar interface {
 type News interface {
 	//CreateNews создание новости
 	CreateNews(ctx context.Context, newsAttr *models.NewsAttributes) (uuid.UUID, error)
+
+	//GetNewsByIDs получить список новостей по ID
+	GetNewsByIDs(ctx context.Context, newsIDs []uuid.UUID) ([]*models.NewsAttributes, error)
+
+	//GetNewsList получить список новостей
+	GetNewsList(ctx context.Context, limit int, offset int) ([]*models.NewsAttributes, error)
 }
 
 // ошибки storage

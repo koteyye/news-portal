@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gofrs/uuid"
 	"github.com/koteyye/news-portal/pkg/models"
+	"github.com/lib/pq"
 	"strconv"
 )
 
@@ -55,8 +56,8 @@ func (s *Storage) CreateNews(ctx context.Context, newsAttr *models.NewsAttribute
 			newsAttr.Content.ID,
 			newsAttr.Preview.ID,
 			newsAttr.State,
-			newsAttr.Author,
-			newsAttr.Author).Scan(&newsID)
+			newsAttr.Author.ID,
+			newsAttr.Author.ID).Scan(&newsID)
 		if err != nil {
 			return fmt.Errorf("can't insert news: %w", err)
 		}
@@ -69,4 +70,149 @@ func (s *Storage) CreateNews(ctx context.Context, newsAttr *models.NewsAttribute
 	}
 
 	return newsID, nil
+}
+
+func (s *Storage) GetNewsByIDs(ctx context.Context, newsIDs []uuid.UUID) ([]*models.NewsAttributes, error) {
+	var news []*models.NewsAttributes
+	query1 := "select id, title, author, description, content_id, preview_id, state, created_at, updated_at, user_created, user_updated from news where id = any($1)"
+	query2 := "select id, file_name, bucket_name, mime_type from files where id = any($1)"
+	err := s.transaction(ctx, func(tx *sql.Tx) error {
+		rows, err := s.db.QueryContext(ctx, query1, pq.Array(newsIDs))
+		if err != nil {
+			return fmt.Errorf("can't get news: %w", err)
+		}
+		for rows.Next() {
+			var newsItem models.NewsAttributes
+			var content models.File
+			var preview models.File
+			var author models.Profile
+			var userCreated models.Profile
+			var userUpdated models.Profile
+			err := rows.Scan(
+				&newsItem.ID,
+				&newsItem.Title,
+				&author.ID,
+				&newsItem.Description,
+				&content.ID,
+				&preview.ID,
+				&newsItem.State,
+				&newsItem.CreatedAt,
+				&newsItem.UpdateAt,
+				&userCreated.ID,
+				&userUpdated.ID)
+			if err != nil {
+				return fmt.Errorf("can't scan news: %w", err)
+			}
+			newsItem.Author = &author
+			newsItem.Content = &content
+			newsItem.Preview = &preview
+			newsItem.UserCreated = &userCreated
+			newsItem.UserUpdated = &userUpdated
+			news = append(news, &newsItem)
+		}
+		filesIDs := make([]string, 0, len(news)*2)
+		for _, newsItem := range news {
+			filesIDs = append(filesIDs, newsItem.Content.ID)
+			if newsItem.Preview.ID != "" {
+				filesIDs = append(filesIDs, newsItem.Preview.ID)
+			}
+		}
+
+		rows, err = s.db.QueryContext(ctx, query2, pq.Array(filesIDs))
+		if err != nil {
+			return fmt.Errorf("can't get files: %w", err)
+		}
+		for rows.Next() {
+			var file models.File
+			err = rows.Scan(&file.ID, &file.FileName, &file.BucketName, &file.MimeType)
+			if err != nil {
+				return fmt.Errorf("can't scan files: %w", err)
+			}
+			for _, newsItem := range news {
+				if newsItem.Content.ID == file.ID {
+					newsItem.Content = &file
+				} else if newsItem.Preview != nil && newsItem.Preview.ID == file.ID {
+					newsItem.Preview = &file
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, errorHandle(err)
+	}
+	return news, nil
+}
+
+func (s *Storage) GetNewsList(ctx context.Context, limit int, offset int) ([]*models.NewsAttributes, error) {
+	var news []*models.NewsAttributes
+	query1 := "select id, title, author, description, content_id, preview_id, state, created_at, updated_at, user_created, user_updated from news order by created_at desc limit $1 offset $2"
+	query2 := "select id, file_name, bucket_name, mime_type from files where id = any($1)"
+	err := s.transaction(ctx, func(tx *sql.Tx) error {
+		rows, err := s.db.QueryContext(ctx, query1, limit, offset)
+		if err != nil {
+			return fmt.Errorf("can't get news: %w", err)
+		}
+		for rows.Next() {
+			var newsItem models.NewsAttributes
+			var content models.File
+			var preview models.File
+			var author models.Profile
+			var userCreated models.Profile
+			var userUpdated models.Profile
+			err := rows.Scan(
+				&newsItem.ID,
+				&newsItem.Title,
+				&author.ID,
+				&newsItem.Description,
+				&content.ID,
+				&preview.ID,
+				&newsItem.State,
+				&newsItem.CreatedAt,
+				&newsItem.UpdateAt,
+				&userCreated.ID,
+				&userUpdated.ID)
+			if err != nil {
+				return fmt.Errorf("can't scan news: %w", err)
+			}
+			newsItem.Author = &author
+			newsItem.Content = &content
+			newsItem.Preview = &preview
+			newsItem.UserCreated = &userCreated
+			newsItem.UserUpdated = &userUpdated
+			news = append(news, &newsItem)
+		}
+
+		filesIDs := make([]string, 0, len(news)*2)
+		for _, newsItem := range news {
+			filesIDs = append(filesIDs, newsItem.Content.ID)
+			if newsItem.Preview.ID != "" {
+				filesIDs = append(filesIDs, newsItem.Preview.ID)
+			}
+		}
+
+		rows, err = s.db.QueryContext(ctx, query2, pq.Array(filesIDs))
+		if err != nil {
+			return fmt.Errorf("can't get files: %w", err)
+		}
+		for rows.Next() {
+			var file models.File
+			err = rows.Scan(&file.ID, &file.FileName, &file.BucketName, &file.MimeType)
+			if err != nil {
+				return fmt.Errorf("can't scan files: %w", err)
+			}
+			for _, newsItem := range news {
+				if newsItem.Content.ID == file.ID {
+					newsItem.Content = &file
+				} else if newsItem.Preview != nil && newsItem.Preview.ID == file.ID {
+					newsItem.Preview = &file
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, errorHandle(err)
+	}
+	return news, nil
 }

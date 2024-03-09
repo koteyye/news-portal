@@ -30,13 +30,17 @@ type UserData struct {
 }
 
 type NewsAttributes struct {
-	ID          string `json:"news_id,omitempty"`
-	Title       string `json:"title"`
-	Author      string `json:"author,omitempty"`
-	Description string `json:"description"`
-	Content     *File  `json:"content_id,omitempty"`
-	Preview     *File  `json:"preview_id,omitempty"`
-	State       string `json:"state,omitempty"`
+	ID          string   `json:"news_id,omitempty"`
+	Title       string   `json:"title"`
+	Author      *Profile `json:"author,omitempty"`
+	Description string   `json:"description"`
+	Content     *File    `json:"content_id,omitempty"`
+	Preview     *File    `json:"preview_id,omitempty"`
+	State       string   `json:"state,omitempty"`
+	CreatedAt   string   `json:"created_at,omitempty"`
+	UpdateAt    string   `json:"update_at,omitempty"`
+	UserCreated *Profile `json:"user_created,omitempty"`
+	UserUpdated *Profile `json:"user_updated,omitempty"`
 }
 
 type File struct {

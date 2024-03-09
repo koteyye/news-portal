@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -63,8 +64,9 @@ func main() {
 		logger.Error(err.Error())
 		return
 	}
+	ip := GetLocalIP()
 	userClient := pb.NewUserClient(connect)
-	newService := service.NewService(storage, minio, logger, userClient)
+	newService := service.NewService(storage, minio, logger, userClient, ip)
 	newSigner := signer.New([]byte(cfg.SecretKey))
 	restHandler := resthandler.NewRESTHandler(newService, logger, cfg.CorsAllowed, newSigner)
 
@@ -104,4 +106,20 @@ func runRESTServer(ctx context.Context, cfg *config.Config, handler *resthandler
 	}
 
 	return nil
+}
+
+func GetLocalIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return ""
+	}
+	for _, address := range addrs {
+		// check the address type and if it is not a loopback the display it
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+	return ""
 }

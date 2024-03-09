@@ -8,12 +8,13 @@ import (
 )
 
 type Service struct {
-	storage    storage.Storage
-	logger     *slog.Logger
-	s3         *s3.S3repo
-	userClient pb.UserClient
+	storage       storage.Storage
+	logger        *slog.Logger
+	s3            *s3.S3repo
+	userClient    pb.UserClient
+	serverAddress string
 }
 
-func NewService(storage storage.Storage, s3 *s3.S3repo, logger *slog.Logger, userClient pb.UserClient) *Service {
-	return &Service{storage: storage, s3: s3, logger: logger, userClient: userClient}
+func NewService(storage storage.Storage, s3 *s3.S3repo, logger *slog.Logger, userClient pb.UserClient, serverAddress string) *Service {
+	return &Service{storage: storage, s3: s3, logger: logger, userClient: userClient, serverAddress: serverAddress}
 }

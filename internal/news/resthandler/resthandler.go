@@ -50,7 +50,7 @@ func (h RESTHandler) InitRoutes() *chi.Mux {
 
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/news", func(r chi.Router) {
-			r.Get("/newslist", h.getNewsList)
+			r.Get("/newsList", h.getNewsList)
 			r.Post("/create", h.createNews)
 			r.Route("/{id}", func(r chi.Router) {
 				r.Get("/", h.getNewsByID)
@@ -79,11 +79,43 @@ func (h RESTHandler) InitRoutes() *chi.Mux {
 }
 
 func (h *RESTHandler) getNewsList(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	newsList, err := h.service.GetNewsList(ctx, 5, 5)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(newsList)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
 }
 
 func (h *RESTHandler) getNewsByID(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	newsID := chi.URLParam(r, "id")
+	newsUUID, err := uuid.FromString(newsID)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+	news, err := h.service.GetNewsByIDs(ctx, []uuid.UUID{newsUUID})
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(&news[0])
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
 }
 
 func (h *RESTHandler) createNews(w http.ResponseWriter, r *http.Request) {
