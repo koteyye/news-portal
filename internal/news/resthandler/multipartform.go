@@ -1,9 +1,12 @@
 package resthandler
 
 import (
+	"errors"
 	"mime/multipart"
 	"net/http"
 )
+
+var errNoSuchFile = errors.New("no such file")
 
 func getFileFromMultipartform(w http.ResponseWriter, r *http.Request, key string) (multipart.File, *multipart.FileHeader, error) {
 	err := r.ParseMultipartForm(1000)
@@ -15,7 +18,6 @@ func getFileFromMultipartform(w http.ResponseWriter, r *http.Request, key string
 	if err != nil {
 		return nil, nil, err
 	}
-	defer file.Close()
 
 	return file, fileHeader, nil
 }

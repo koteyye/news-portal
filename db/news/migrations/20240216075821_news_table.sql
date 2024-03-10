@@ -9,7 +9,8 @@ create table if not exists files (
     mime_type varchar(512) not null,
     created_at timestamp default now(),
     updated_at timestamp default now(),
-    deleted_at timestamp
+    deleted_at timestamp,
+    hard_deleted boolean
     );
 
 create table if not exists news (
@@ -46,6 +47,7 @@ create table if not exists comments (
     author uuid not null,
     created_at timestamp default now(),
     updated_at timestamp default now(),
+    content text,
     is_active boolean,
     foreign key (news_id) references news(id)
     );

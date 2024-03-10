@@ -34,11 +34,11 @@ type NewsAttributes struct {
 	Title       string   `json:"title"`
 	Author      *Profile `json:"author,omitempty"`
 	Description string   `json:"description"`
-	Content     *File    `json:"content_id,omitempty"`
-	Preview     *File    `json:"preview_id,omitempty"`
+	Content     *File    `json:"content,omitempty"`
+	Preview     *File    `json:"preview,omitempty"`
 	State       string   `json:"state,omitempty"`
-	CreatedAt   string   `json:"created_at,omitempty"`
-	UpdateAt    string   `json:"update_at,omitempty"`
+	CreatedAt   string   `json:"createdAt,omitempty"`
+	UpdatedAt   string   `json:"updatedAt,omitempty"`
 	UserCreated *Profile `json:"user_created,omitempty"`
 	UserUpdated *Profile `json:"user_updated,omitempty"`
 }
@@ -48,6 +48,21 @@ type File struct {
 	MimeType   string `json:"mime_type"`
 	BucketName string `json:"bucket_name"`
 	FileName   string `json:"file_name"`
+}
+
+type Like struct {
+	ID        string   `json:"id"`
+	Liker     *Profile `json:"liker"`
+	CreatedAt string   `json:"created_at"`
+	UpdatedAt string   `json:"update_at"`
+}
+
+type Comment struct {
+	ID          string   `json:"id"`
+	Author      *Profile `json:"author"`
+	CreatedAt   string   `json:"createdAt"`
+	UpdatedAt   string   `json:"updatedAt"`
+	TextComment string   `json:"textComment"`
 }
 
 // ParseUserData сериализует UserData

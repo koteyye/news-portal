@@ -17,9 +17,10 @@ type Storage interface {
 	Users
 	Avatar
 	News
+	Activities
 }
 
-// Authorization регистрация и авторизация пользователя.
+// Authorizarion регистрация и авторизация пользователя.
 type Authorizarion interface {
 	// CreateLogin создание пользователя
 	CreateLogin(ctx context.Context, login string, hashPassword string) (uuid.UUID, error)
@@ -39,13 +40,13 @@ type Users interface {
 	// EditUserByID редактировать профиль пользователя по ID
 	EditUserByID(ctx context.Context, profile *models.Profile) error
 
-	// DeleteUserByID удалить пользователя по ID
+	// DeleteUserByIDs удалить пользователя по ID
 	DeleteUserByIDs(ctx context.Context, userIDs []uuid.UUID) error
 
 	// SetUserRoles устанавливает роли пользователю
 	SetUserRoles(ctx context.Context, userID uuid.UUID, roles []string) error
 
-	// EditRole удаляет текущие роли пользователя и добавляет новые
+	// EditRoles удаляет текущие роли пользователя и добавляет новые
 	EditRoles(ctx context.Context, userID uuid.UUID, roles []string) error
 }
 
@@ -54,15 +55,30 @@ type Avatar interface {
 	// TOBE
 }
 
+// News CRUD с новостями
 type News interface {
-	//CreateNews создание новости
+	// CreateNews создание новости
 	CreateNews(ctx context.Context, newsAttr *models.NewsAttributes) (uuid.UUID, error)
 
-	//GetNewsByIDs получить список новостей по ID
+	// GetNewsByIDs получить список новостей по ID
 	GetNewsByIDs(ctx context.Context, newsIDs []uuid.UUID) ([]*models.NewsAttributes, error)
 
-	//GetNewsList получить список новостей
+	// GetNewsList получить список новостей
 	GetNewsList(ctx context.Context, limit int, offset int) ([]*models.NewsAttributes, error)
+
+	// DeleteNewsByID удалить новость по ID
+	DeleteNewsByID(ctx context.Context, newsID uuid.UUID) error
+
+	// EditNewsByID редактирование статьи по ID
+	EditNewsByID(ctx context.Context, newsID uuid.UUID, userUpdated uuid.UUID, newsAttr *models.NewsAttributes) error
+
+	// SetHardDeletedFilesByIDs проставляет отметку о hard-delete файлов
+	SetHardDeletedFilesByIDs(ctx context.Context, files []uuid.UUID) error
+}
+
+// Activities CRUD над новостными активностями
+type Activities interface {
+	GetLikesByNewsID(ctx context.Context, newsID uuid.UUID) ([]*models.Like, error)
 }
 
 // ошибки storage
