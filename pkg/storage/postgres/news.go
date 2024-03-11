@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"github.com/gofrs/uuid"
 	"github.com/koteyye/news-portal/pkg/models"
@@ -169,7 +168,7 @@ func (s *Storage) GetNewsByIDs(ctx context.Context, newsIDs []uuid.UUID) ([]*mod
 				&preview.ID,
 				&newsItem.State,
 				&newsItem.CreatedAt,
-				&newsItem.UpdateAt,
+				&newsItem.UpdatedAt,
 				&userCreated.ID,
 				&userUpdated.ID)
 			if err != nil {
@@ -241,7 +240,7 @@ func (s *Storage) GetNewsList(ctx context.Context, limit int, offset int) ([]*mo
 				&preview.ID,
 				&newsItem.State,
 				&newsItem.CreatedAt,
-				&newsItem.UpdateAt,
+				&newsItem.UpdatedAt,
 				&userCreated.ID,
 				&userUpdated.ID)
 			if err != nil {
@@ -300,5 +299,39 @@ func (s *Storage) DeleteNewsByID(ctx context.Context, newsID uuid.UUID) error {
 }
 
 func (s *Storage) SetHardDeletedFilesByIDs(ctx context.Context, files []uuid.UUID) error {
-	return errors.New("not implemented")
+	query := "update files set hard_deleted = true where id = any($1)"
+	_, err := s.db.ExecContext(ctx, query, pq.Array(files))
+	if err != nil {
+		return errorHandle(err)
+	}
+	return nil
+}
+
+func (s *Storage) GetDeletingFiles(ctx context.Context) ([]*models.File, error) {
+	var filesIDs []*models.File
+	query := "select id, mime_type, bucket_name, file_name from files where deleted_at is not null and hard_deleted = false"
+
+	rows, err := s.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, errorHandle(err)
+	}
+	for rows.Next() {
+		var file models.File
+		err = rows.Scan(&file.ID, &file.MimeType, &file.BucketName, &file.FileName)
+		if err != nil {
+			return nil, errorHandle(err)
+		}
+		filesIDs = append(filesIDs, &file)
+	}
+	return filesIDs, nil
+}
+
+func (s *Storage) GetNewsFileByID(ctx context.Context, fileID uuid.UUID) (*models.File, error) {
+	var file models.File
+	query := "select id, mime_type, bucket_name, file_name from files where id = $1"
+	err := s.db.QueryRowContext(ctx, query, fileID).Scan(&file.ID, &file.MimeType, &file.BucketName, &file.FileName)
+	if err != nil {
+		return nil, errorHandle(err)
+	}
+	return &file, nil
 }

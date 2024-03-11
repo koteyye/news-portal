@@ -96,3 +96,15 @@ func ParseProfile(r io.Reader) (*Profile, error) {
 	}
 	return &p, nil
 }
+
+func ParseComment(r io.Reader) (*Comment, error) {
+	var c Comment
+	err := json.NewDecoder(r).Decode(&c)
+	if err != nil {
+		return nil, fmt.Errorf("decoding the comment: %w", err)
+	}
+	if c.TextComment == "" {
+		return nil, errors.New("text comment is empty")
+	}
+	return &c, nil
+}

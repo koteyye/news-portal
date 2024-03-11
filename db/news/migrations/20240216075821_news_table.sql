@@ -37,7 +37,7 @@ create table if not exists likes (
     liker uuid not null,
     created_at timestamp default now(),
     updated_at timestamp default now(),
-    is_active boolean,
+    is_active boolean default true,
     foreign key (news_id) references news(id)
     );
 

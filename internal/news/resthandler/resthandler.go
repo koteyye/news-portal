@@ -7,6 +7,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/koteyye/news-portal/pkg/models"
 	"github.com/koteyye/news-portal/pkg/signer"
+	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -51,32 +52,33 @@ func (h RESTHandler) InitRoutes() *chi.Mux {
 
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/news", func(r chi.Router) {
+			r.Route("/writer", func(r chi.Router) {
+				r.Use(h.checkWriter)
+				r.Post("/create", h.createNews)
+				r.Patch("/{id}", h.editNews)
+				r.Delete("/{id}", h.deleteNews)
+			})
 			r.Get("/newsList", h.getNewsList)
-			r.Post("/create", h.createNews)
 			r.Route("/{id}", func(r chi.Router) {
 				r.Get("/", h.getNewsByID)
-				r.Patch("/", h.editNews)
-				r.Delete("/", h.deleteNews)
-				r.Route("/content", func(r chi.Router) {
-					r.Get("/", h.downloadContent)
-				})
 				r.Route("/likes", func(r chi.Router) {
 					r.Get("/{id}", h.getLikesByNewsID)
 					r.Patch("/like", h.incrementLike)
 					r.Patch("/dislike", h.decrementLike)
 				})
-				r.Patch("/like", h.incrementLike)
-				r.Patch("/dislike", h.decrementLike)
 				r.Route("/comment", func(r chi.Router) {
-					r.Post("/", h.createComment)
-					r.Patch("/{id}", h.editComment)
-					r.Delete("/id", h.deleteComment)
+					r.Post("/{newsID}", h.createComment)
+					r.Patch("/", h.editComment)
+					r.Delete("/{id}", h.deleteComment)
+					r.Get("/{newsID}", h.getComments)
 				})
+			})
+			r.Route("/files", func(r chi.Router) {
+				r.Get("/{id}", h.downloadContent)
 			})
 		})
 		r.Route("/profile", func(r chi.Router) {
 			r.Get("/me", h.me)
-			r.Patch("/{id}", h.editProfile)
 		})
 	})
 
@@ -244,7 +246,29 @@ func (h *RESTHandler) deleteNews(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) downloadContent(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	fileID := chi.URLParam(r, "id")
+	fileUUID, err := uuid.FromString(fileID)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+
+	file, err := h.service.DownloadNewsFile(ctx, fileUUID)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusInternalServerError, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Write(fileBytes)
 }
 
 func (h *RESTHandler) getLikesByNewsID(w http.ResponseWriter, r *http.Request) {
@@ -257,7 +281,17 @@ func (h *RESTHandler) getLikesByNewsID(w http.ResponseWriter, r *http.Request) {
 		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
 		return
 	}
-
+	likes, err := h.service.GetLikesByNewsID(ctx, newsUUID)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(likes)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusInternalServerError, Err: err, ContentType: resp.CtJSON})
+		return
+	}
 }
 
 func (h *RESTHandler) incrementLike(w http.ResponseWriter, r *http.Request) {
@@ -265,19 +299,124 @@ func (h *RESTHandler) incrementLike(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) decrementLike(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	profile := ctx.Value(profileIDKey).(*models.Profile)
+	userUUID, err := uuid.FromString(profile.ID)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+
+	newsID := chi.URLParam(r, "id")
+	newsUUID, err := uuid.FromString(newsID)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+	err = h.service.DeleteLike(ctx, newsUUID, userUUID)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *RESTHandler) createComment(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	profile := ctx.Value(profileIDKey).(*models.Profile)
+
+	comment, err := models.ParseComment(r.Body)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+	comment.Author = profile
+
+	newsID := chi.URLParam(r, "newsID")
+	newsUUID, err := uuid.FromString(newsID)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+
+	commentID, err := h.service.CreateComment(ctx, newsUUID, comment)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"id": commentID.String()})
 }
 
 func (h *RESTHandler) editComment(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	profile := ctx.Value(profileIDKey).(*models.Profile)
+
+	comment, err := models.ParseComment(r.Body)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+	comment.Author = profile
+
+	err = h.service.EditComment(ctx, comment)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *RESTHandler) deleteComment(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	commentID := chi.URLParam(r, "id")
+	commentUUID, err := uuid.FromString(commentID)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+
+	err = h.service.DeleteComment(ctx, commentUUID)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *RESTHandler) getComments(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	newsID := chi.URLParam(r, "newsID")
+	newsUUID, err := uuid.FromString(newsID)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+
+	comments, err := h.service.GetCommentsByNewsID(ctx, newsUUID)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusBadRequest, Err: err, ContentType: resp.CtJSON})
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(comments)
+	if err != nil {
+		resp.MapErrToResponse(w, &resp.ResponseOptions{StatusCode: http.StatusInternalServerError, Err: err, ContentType: resp.CtJSON})
+		return
+	}
 }
 
 func (h *RESTHandler) me(w http.ResponseWriter, r *http.Request) {

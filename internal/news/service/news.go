@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gofrs/uuid"
 	pb "github.com/koteyye/news-portal/proto"
+	"github.com/minio/minio-go/v7"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/koteyye/news-portal/pkg/models"
@@ -190,6 +191,15 @@ func (s *Service) DeleteNewsByID(ctx context.Context, newsID uuid.UUID) error {
 		return fmt.Errorf("can't delete news: %w", err)
 	}
 	return nil
+}
+
+func (s *Service) DownloadNewsFile(ctx context.Context, fileID uuid.UUID) (*minio.Object, error) {
+	file, err := s.storage.GetNewsFileByID(ctx, fileID)
+	if err != nil {
+		return nil, fmt.Errorf("can't get file info from db: %w", err)
+	}
+
+	return s.s3.GetFile(ctx, file.BucketName, file.FileName)
 }
 
 func userAppend(news []*models.NewsAttributes, users []*pb.Users) []*models.NewsAttributes {

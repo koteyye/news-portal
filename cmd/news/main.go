@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/koteyye/news-portal/internal/news/news_cleaner"
 	"github.com/koteyye/news-portal/pkg/s3"
 	"github.com/koteyye/news-portal/pkg/signer"
 	pb "github.com/koteyye/news-portal/proto"
@@ -69,9 +70,15 @@ func main() {
 	newService := service.NewService(storage, minio, logger, userClient, ip)
 	newSigner := signer.New([]byte(cfg.SecretKey))
 	restHandler := resthandler.NewRESTHandler(newService, logger, cfg.CorsAllowed, newSigner)
+	cleaner := news_cleaner.InitCleaner(storage, logger, minio)
 
 	g.Go(func() error {
 		runRESTServer(gCtx, cfg, restHandler, logger)
+		return nil
+	})
+
+	g.Go(func() error {
+		cleaner.StartWorker(gCtx)
 		return nil
 	})
 
