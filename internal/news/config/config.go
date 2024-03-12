@@ -5,17 +5,16 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/caarlos0/env/v10"
 	"log/slog"
 	"os"
-
-	"github.com/caarlos0/env/v10"
 )
 
 // ErrConfigValidate обрабатываемая ошибка конфигурации
 var ErrConfigValidate = errors.New("required config attributes is empty")
 
 type configPath struct {
-	path string `env:"CONFIG_PATH"`
+	Path string `env:"CONFIG_PATH"`
 }
 
 // Config конфигурация сервиса
@@ -94,8 +93,8 @@ func GetConfig() (*Config, error) {
 		return nil, err
 	}
 	var config *Config
-	if envConfigPath.path != "" {
-		c, err := configFromFile(envConfigPath.path)
+	if envConfigPath.Path != "" {
+		c, err := configFromFile(envConfigPath.Path)
 		if err != nil {
 			return nil, err
 		}

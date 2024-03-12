@@ -21,6 +21,8 @@ type Storage interface {
 }
 
 // Authorizarion регистрация и авторизация пользователя.
+//
+//go:generate mockgen -source=storage.go -destination=mock/mock.go
 type Authorizarion interface {
 	// CreateLogin создание пользователя
 	CreateLogin(ctx context.Context, login string, hashPassword string) (uuid.UUID, error)
