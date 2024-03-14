@@ -21,13 +21,35 @@ type S3repo struct {
 	client *minio.Client
 }
 
-// InitS3Repo возвращает новый экземпляр S3repo
-func InitS3Repo(endpoint string, accessKeyID string, secretKey string, useSSL bool) (*S3repo, error) {
+type Handler struct {
+	S3
+}
+
+//go:generate mockgen -source=s3.go -destination=mock/mock.go
+type S3 interface {
+	// UploadFile загружает файл в хранилище
+	UploadFile(ctx context.Context, reader io.Reader, bucketName, filename string, fileSize int64) (minio.UploadInfo, string, error)
+
+	// RemoveFile удаляет файл из хранилища
+	RemoveFile(ctx context.Context, bucketName, filename string) error
+
+	// GetFile получить файл из хранилища
+	GetFile(ctx context.Context, bucketName, filename string) (*minio.Object, error)
+
+	// Ping проверить подключение к s3
+	Ping(_ context.Context) error
+
+	// GetStats получить информацию по объекту из s3
+	GetStats(ctx context.Context, bucketName, filename string) (*minio.ObjectInfo, error)
+}
+
+// InitS3Handler возвращает новый экземпляр S3repo
+func InitS3Handler(endpoint string, accessKeyID string, secretKey string, useSSL bool) (*Handler, error) {
 	client, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKeyID, secretKey, ""),
 		Secure: useSSL,
 	})
-	return &S3repo{client: client}, err
+	return &Handler{&S3repo{client: client}}, err
 }
 
 // UploadFile загружает файл в хранилище
@@ -54,7 +76,7 @@ func (s *S3repo) GetFile(ctx context.Context, bucketName, filename string) (*min
 }
 
 // Ping проверить подключение к s3
-func (s *S3repo) Ping(ctx context.Context) error {
+func (s *S3repo) Ping(_ context.Context) error {
 	res, err := http.Get(s.client.EndpointURL().String() + healthURL)
 	if err != nil {
 		return ErrPing
@@ -63,4 +85,12 @@ func (s *S3repo) Ping(ctx context.Context) error {
 		return ErrPing
 	}
 	return nil
+}
+
+func (s *S3repo) GetStats(ctx context.Context, bucketName, filename string) (*minio.ObjectInfo, error) {
+	stats, err := s.client.StatObject(ctx, bucketName, filename, minio.StatObjectOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("can't get object stats: %w", err)
+	}
+	return &stats, nil
 }

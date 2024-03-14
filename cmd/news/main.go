@@ -55,7 +55,7 @@ func main() {
 		logger.Error(err.Error())
 		return
 	}
-	minio, err := s3.InitS3Repo(cfg.S3Address, cfg.S3KeyID, cfg.S3SecretKey, false)
+	minio, err := s3.InitS3Handler(cfg.S3Address, cfg.S3KeyID, cfg.S3SecretKey, false)
 	if err != nil {
 		logger.Error(err.Error())
 		return

@@ -17,13 +17,13 @@ type NewsCleaner struct {
 	ticker  *time.Ticker
 	storage storage.Storage
 	logger  *slog.Logger
-	s3      *s3.S3repo
+	s3      *s3.Handler
 }
 
 const tick = time.Hour * 1
 
 // InitCleaner возвращает новый экземпляр NewsCleaner
-func InitCleaner(storage storage.Storage, logger *slog.Logger, s3 *s3.S3repo) *NewsCleaner {
+func InitCleaner(storage storage.Storage, logger *slog.Logger, s3 *s3.Handler) *NewsCleaner {
 	return &NewsCleaner{ticker: time.NewTicker(time.Hour * 1), storage: storage, logger: logger, s3: s3}
 }
 

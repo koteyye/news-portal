@@ -19,6 +19,7 @@ import (
 const (
 	testBucketName = "testbucket"
 	testFileName   = "test_file.jpeg"
+	equalErr       = "can't get object stats: The specified key does not exist."
 )
 
 var testCfg = config.Config{
@@ -33,7 +34,7 @@ func TestNewsCleaner_StartWorker(t *testing.T) {
 		defer c.Finish()
 
 		storage := mock_storage.NewMockStorage(c)
-		minio, err := s3.InitS3Repo(testCfg.S3Address, testCfg.S3KeyID, testCfg.S3SecretKey, false)
+		minio, err := s3.InitS3Handler(testCfg.S3Address, testCfg.S3KeyID, testCfg.S3SecretKey, false)
 		assert.NoError(t, err)
 		err = minio.Ping(context.Background())
 		if errors.Is(err, s3.ErrPing) {
@@ -46,9 +47,8 @@ func TestNewsCleaner_StartWorker(t *testing.T) {
 		fileUUID, err := uuid.NewV4()
 		assert.NoError(t, err)
 
-		info, mimetype, err := minio.UploadFile(context.Background(), file, testBucketName, testFileName, 10)
+		_, mimetype, err := minio.UploadFile(context.Background(), file, testBucketName, testFileName, -1)
 		assert.NoError(t, err)
-		assert.NotNil(t, info)
 
 		opts := &slog.HandlerOptions{Level: slog.LevelInfo}
 		handler := slog.NewTextHandler(os.Stdout, opts)
@@ -71,14 +71,13 @@ func TestNewsCleaner_StartWorker(t *testing.T) {
 			logger:  logger,
 			s3:      minio,
 		}
-
 		go func() {
 			cleaner.StartWorker(context.Background())
 		}()
 
 		timer := time.NewTicker(time.Second * 5)
 		<-timer.C
-		_, err = minio.GetFile(context.Background(), testBucketName, testFileName)
-		assert.NoError(t, err)
+		_, err = minio.GetStats(context.Background(), testBucketName, testFileName)
+		assert.Errorf(t, err, equalErr)
 	})
 }
