@@ -2,15 +2,13 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"github.com/gofrs/uuid"
 	"github.com/koteyye/news-portal/pkg/models"
 )
 
-func (s *Storage) GetLikesByNewsID(ctx context.Context, newsID uuid.UUID) ([]*models.Like, error) {
-	var likes []*models.Like
+func (s *Storage) GetLikesByNewsID(ctx context.Context, newsID uuid.UUID) (map[string]models.Like, error) {
+	likes := make(map[string]models.Like)
 	query := "select id, liker, created_at, updated_at from likes where is_active = true and news_id = $1"
 
 	rows, err := s.db.QueryContext(ctx, query, newsID)
@@ -25,33 +23,15 @@ func (s *Storage) GetLikesByNewsID(ctx context.Context, newsID uuid.UUID) ([]*mo
 			return nil, fmt.Errorf("can't scan like: %w", err)
 		}
 		like.Liker = &liker
-		likes = append(likes, &like)
+		likes[liker.ID] = like
 	}
 	return likes, nil
 }
 
 func (s *Storage) CreateLike(ctx context.Context, newsID uuid.UUID, likerID uuid.UUID) error {
-	query1 := "select id from likes where liker = $1 and news_id = $2 and is_active = true"
-	query2 := "insert into likes (liker, news_id) values ($1, $2)"
+	query1 := "insert into likes (liker, news_id) values ($1, $2)"
 
-	err := s.transaction(ctx, func(tx *sql.Tx) error {
-		var likeID uuid.UUID
-		err := s.db.QueryRowContext(ctx, query1, likerID, newsID).Scan(&likeID)
-		if err != nil {
-			if !errors.Is(err, sql.ErrNoRows) {
-				return fmt.Errorf("can't get like: %w", err)
-			}
-			err = nil
-		}
-		if likeID != uuid.Nil {
-			return errors.New("duplicate like")
-		}
-
-		_, err = s.db.ExecContext(ctx, query2, likerID, newsID)
-
-		return nil
-	})
-
+	_, err := s.db.ExecContext(ctx, query1, likerID, newsID)
 	if err != nil {
 		return errorHandle(err)
 	}

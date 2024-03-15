@@ -282,10 +282,10 @@ func (mr *MockStorageMockRecorder) GetHashedPasswordByLogin(ctx, login interface
 }
 
 // GetLikesByNewsID mocks base method.
-func (m *MockStorage) GetLikesByNewsID(ctx context.Context, newsID uuid.UUID) ([]*models.Like, error) {
+func (m *MockStorage) GetLikesByNewsID(ctx context.Context, newsID uuid.UUID) (map[string]models.Like, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLikesByNewsID", ctx, newsID)
-	ret0, _ := ret[0].([]*models.Like)
+	ret0, _ := ret[0].(map[string]models.Like)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -819,10 +819,10 @@ func (mr *MockActivitiesMockRecorder) GetCommentsByNewsID(ctx, newsID interface{
 }
 
 // GetLikesByNewsID mocks base method.
-func (m *MockActivities) GetLikesByNewsID(ctx context.Context, newsID uuid.UUID) ([]*models.Like, error) {
+func (m *MockActivities) GetLikesByNewsID(ctx context.Context, newsID uuid.UUID) (map[string]models.Like, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLikesByNewsID", ctx, newsID)
-	ret0, _ := ret[0].([]*models.Like)
+	ret0, _ := ret[0].(map[string]models.Like)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

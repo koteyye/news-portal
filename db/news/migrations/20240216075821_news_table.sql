@@ -39,6 +39,7 @@ create table if not exists likes (
     updated_at timestamp default now(),
     is_active boolean default true,
     foreign key (news_id) references news(id)
+    unique(liker, news_id)
     );
 
 create table if not exists comments (

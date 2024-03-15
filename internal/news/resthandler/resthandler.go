@@ -55,14 +55,16 @@ func (h RESTHandler) InitRoutes() *chi.Mux {
 			r.Route("/writer", func(r chi.Router) {
 				r.Use(h.checkWriter)
 				r.Post("/create", h.createNews)
-				r.Patch("/{id}", h.editNews)
-				r.Delete("/{id}", h.deleteNews)
+				r.Route("/{id}", func(r chi.Router) {
+					r.Patch("/", h.editNews)
+					r.Delete("/", h.deleteNews)
+				})
 			})
 			r.Get("/newsList", h.getNewsList)
 			r.Route("/{id}", func(r chi.Router) {
 				r.Get("/", h.getNewsByID)
 				r.Route("/likes", func(r chi.Router) {
-					r.Get("/{id}", h.getLikesByNewsID)
+					r.Get("/", h.getLikesByNewsID)
 					r.Patch("/like", h.incrementLike)
 					r.Patch("/dislike", h.decrementLike)
 				})
@@ -86,8 +88,7 @@ func (h RESTHandler) InitRoutes() *chi.Mux {
 }
 
 func (h *RESTHandler) getNewsList(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
+	ctx := r.Context()
 
 	limitParam := r.URL.Query().Get("limit")
 	offsetParam := r.URL.Query().Get("page")
@@ -115,8 +116,7 @@ func (h *RESTHandler) getNewsList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) getNewsByID(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
+	ctx := r.Context()
 
 	newsID := chi.URLParam(r, "id")
 	newsUUID, err := uuid.FromString(newsID)
@@ -138,8 +138,7 @@ func (h *RESTHandler) getNewsByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) createNews(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
+	ctx := r.Context()
 
 	profile := ctx.Value(profileIDKey).(*models.Profile)
 
@@ -179,8 +178,7 @@ func (h *RESTHandler) createNews(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) editNews(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
+	ctx := r.Context()
 
 	profile := ctx.Value(profileIDKey).(*models.Profile)
 
@@ -272,8 +270,7 @@ func (h *RESTHandler) downloadContent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) getLikesByNewsID(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
+	ctx := r.Context()
 
 	newsID := chi.URLParam(r, "id")
 	newsUUID, err := uuid.FromString(newsID)
@@ -299,8 +296,7 @@ func (h *RESTHandler) incrementLike(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) decrementLike(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
+	ctx := r.Context()
 
 	profile := ctx.Value(profileIDKey).(*models.Profile)
 	userUUID, err := uuid.FromString(profile.ID)
@@ -324,8 +320,7 @@ func (h *RESTHandler) decrementLike(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) createComment(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
+	ctx := r.Context()
 
 	profile := ctx.Value(profileIDKey).(*models.Profile)
 
@@ -354,8 +349,7 @@ func (h *RESTHandler) createComment(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) editComment(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
+	ctx := r.Context()
 
 	profile := ctx.Value(profileIDKey).(*models.Profile)
 
@@ -376,8 +370,7 @@ func (h *RESTHandler) editComment(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) deleteComment(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
+	ctx := r.Context()
 
 	commentID := chi.URLParam(r, "id")
 	commentUUID, err := uuid.FromString(commentID)
@@ -396,8 +389,7 @@ func (h *RESTHandler) deleteComment(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) getComments(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
+	ctx := r.Context()
 
 	newsID := chi.URLParam(r, "newsID")
 	newsUUID, err := uuid.FromString(newsID)
@@ -420,8 +412,7 @@ func (h *RESTHandler) getComments(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) me(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
+	ctx := r.Context()
 
 	profile := ctx.Value(profileIDKey).(*models.Profile)
 	if profile == nil {

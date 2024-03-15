@@ -10,10 +10,10 @@ import (
 // Service структура сервисного слоя
 type Service struct {
 	storage storage.Storage
-	s3      *s3.S3repo
+	s3      *s3.Handler
 	logger  *slog.Logger
 }
 
-func NewService(storage storage.Storage, s3 *s3.S3repo, logger *slog.Logger) *Service {
+func NewService(storage storage.Storage, s3 *s3.Handler, logger *slog.Logger) *Service {
 	return &Service{storage: storage, s3: s3, logger: logger}
 }

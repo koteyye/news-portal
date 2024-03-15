@@ -87,7 +87,7 @@ type News interface {
 // Activities CRUD над новостными активностями.
 type Activities interface {
 	// GetLikesByNewsID получить все лайки по ID новости.
-	GetLikesByNewsID(ctx context.Context, newsID uuid.UUID) ([]*models.Like, error)
+	GetLikesByNewsID(ctx context.Context, newsID uuid.UUID) (map[string]models.Like, error)
 
 	// CreateLike создать лайк для новости по ID.
 	CreateLike(ctx context.Context, newsID uuid.UUID, likerID uuid.UUID) error

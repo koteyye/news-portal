@@ -1,7 +1,6 @@
 package resthandler
 
 import (
-	"context"
 	"log/slog"
 	"net/http"
 	"time"
@@ -58,8 +57,7 @@ func (h *RESTHandler) healthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) signUp(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), defaultTimeout)
-	defer cancel()
+	ctx := r.Context()
 
 	input, err := models.ParseUserData(r.Body)
 	if err != nil {
@@ -87,8 +85,7 @@ func (h *RESTHandler) signUp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RESTHandler) signIn(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), defaultTimeout)
-	defer cancel()
+	ctx := r.Context()
 
 	input, err := models.ParseUserData(r.Body)
 	if err != nil {

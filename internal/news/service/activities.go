@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-func (s *Service) GetLikesByNewsID(ctx context.Context, newsID uuid.UUID) ([]*models.Like, error) {
+func (s *Service) GetLikesByNewsID(ctx context.Context, newsID uuid.UUID) (map[string]models.Like, error) {
 	likes, err := s.storage.GetLikesByNewsID(ctx, newsID)
 	if err != nil {
 		return nil, fmt.Errorf("can't get likes: %w", err)
@@ -25,17 +25,18 @@ func (s *Service) GetLikesByNewsID(ctx context.Context, newsID uuid.UUID) ([]*mo
 	if err != nil {
 		return nil, fmt.Errorf("can't get user info: %w", err)
 	}
-	for _, like := range likes {
-		for _, user := range w.Users {
-			if like.Liker.ID == user.UserID {
-				like.Liker = &models.Profile{
-					ID:        user.UserID,
-					UserName:  user.Username,
-					FirstName: user.Firstname,
-					LastName:  user.Lastname,
-					SurName:   user.Surname,
-				}
-			}
+	for _, user := range w.Users {
+		likes[user.UserID] = models.Like{
+			ID: likes[user.UserID].ID,
+			Liker: &models.Profile{
+				ID:        user.UserID,
+				UserName:  user.Username,
+				FirstName: user.Firstname,
+				LastName:  user.Lastname,
+				SurName:   user.Surname,
+			},
+			CreatedAt: likes[user.UserID].CreatedAt,
+			UpdatedAt: likes[user.UserID].UpdatedAt,
 		}
 	}
 	return likes, nil
