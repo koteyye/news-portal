@@ -66,7 +66,7 @@ func (s *Service) CreateNews(ctx context.Context,
 		}
 	}
 	author := models.Profile{ID: userID}
-	newsAttr.Author = &author
+	newsAttr.AuthorInfo = &author
 
 	newsID, err := s.storage.CreateNews(ctx, newsAttr)
 	if err != nil {
@@ -139,12 +139,12 @@ func (s *Service) GetNewsByIDs(ctx context.Context, newsIDs []uuid.UUID) ([]*mod
 
 	var userIDs []string
 	for _, newsItem := range news {
-		userIDs = append(userIDs, newsItem.Author.ID)
-		if newsItem.UserCreated.ID != newsItem.Author.ID {
-			userIDs = append(userIDs, newsItem.UserCreated.ID)
+		userIDs = append(userIDs, newsItem.AuthorInfo.ID)
+		if newsItem.UserCreatedInfo.ID != newsItem.AuthorInfo.ID {
+			userIDs = append(userIDs, newsItem.UserCreatedInfo.ID)
 		}
-		if newsItem.UserUpdated.ID != newsItem.Author.ID {
-			userIDs = append(userIDs, newsItem.UserUpdated.ID)
+		if newsItem.UserUpdatedInfo.ID != newsItem.AuthorInfo.ID {
+			userIDs = append(userIDs, newsItem.UserUpdatedInfo.ID)
 		}
 	}
 	md := metadata.New(map[string]string{"X-Real-IP": s.serverAddress})
@@ -166,12 +166,12 @@ func (s *Service) GetNewsList(ctx context.Context, limit int, offset int) ([]*mo
 
 	var userIDs []string
 	for _, newsItem := range news {
-		userIDs = append(userIDs, newsItem.Author.ID)
-		if newsItem.UserCreated.ID != newsItem.Author.ID {
-			userIDs = append(userIDs, newsItem.UserCreated.ID)
+		userIDs = append(userIDs, newsItem.AuthorInfo.ID)
+		if newsItem.UserCreatedInfo.ID != newsItem.AuthorInfo.ID {
+			userIDs = append(userIDs, newsItem.UserCreatedInfo.ID)
 		}
-		if newsItem.UserUpdated.ID != newsItem.Author.ID {
-			userIDs = append(userIDs, newsItem.UserUpdated.ID)
+		if newsItem.UserUpdatedInfo.ID != newsItem.AuthorInfo.ID {
+			userIDs = append(userIDs, newsItem.UserUpdatedInfo.ID)
 		}
 	}
 	md := metadata.New(map[string]string{"X-Real-IP": s.serverAddress})
@@ -213,14 +213,14 @@ func userAppend(news []*models.NewsAttributes, users []*pb.Users) []*models.News
 				SurName:   user.Surname,
 				AvatarID:  uuid.FromStringOrNil(user.Avatar),
 			}
-			if newsItem.Author.ID == user.ID {
-				newsItem.Author = &user
+			if newsItem.AuthorInfo.ID == user.ID {
+				newsItem.AuthorInfo = &user
 			}
-			if newsItem.UserCreated.ID == user.ID {
-				newsItem.UserCreated = &user
+			if newsItem.UserCreatedInfo.ID == user.ID {
+				newsItem.UserCreatedInfo = &user
 			}
-			if newsItem.UserUpdated.ID == user.ID {
-				newsItem.UserUpdated = &user
+			if newsItem.UserUpdatedInfo.ID == user.ID {
+				newsItem.UserUpdatedInfo = &user
 			}
 		}
 	}

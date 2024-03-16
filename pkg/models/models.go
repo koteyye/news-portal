@@ -13,7 +13,7 @@ const DefaultRole = "reader" // DefaultRole роль назначаемая по
 
 // Profile профиль пользователя
 type Profile struct {
-	ID        string    `json:"userID,omitempty"`
+	ID        string    `json:"userID,omitempty" db:"id"`
 	UserName  string    `json:"userName"`
 	FirstName string    `json:"firstName,omitempty"`
 	LastName  string    `json:"lastName,omitempty"`
@@ -30,24 +30,29 @@ type UserData struct {
 }
 
 type NewsAttributes struct {
-	ID          string   `json:"news_id,omitempty"`
-	Title       string   `json:"title"`
-	Author      *Profile `json:"author,omitempty"`
-	Description string   `json:"description"`
-	Content     *File    `json:"content,omitempty"`
-	Preview     *File    `json:"preview,omitempty"`
-	State       string   `json:"state,omitempty"`
-	CreatedAt   string   `json:"createdAt,omitempty"`
-	UpdatedAt   string   `json:"updatedAt,omitempty"`
-	UserCreated *Profile `json:"user_created,omitempty"`
-	UserUpdated *Profile `json:"user_updated,omitempty"`
+	ID              string   `json:"news_id,omitempty" db:"id"`
+	Title           string   `json:"title" db:"title"`
+	AuthorInfo      *Profile `json:"author,omitempty"`
+	AuthorID        string   `db:"author"`
+	Description     string   `json:"description" db:"description"`
+	Content         *File    `json:"content,omitempty"`
+	ContentID       string   `db:"content_id"`
+	Preview         *File    `json:"preview,omitempty"`
+	PreviewID       string   `db:"preview_id"`
+	State           string   `json:"state,omitempty" db:"state"`
+	CreatedAt       string   `json:"createdAt,omitempty" db:"created_at"`
+	UpdatedAt       string   `json:"updatedAt,omitempty" db:"updated_at"`
+	UserCreatedInfo *Profile `json:"userCreated,omitempty"`
+	UserCreatedID   string   `db:"user_created"`
+	UserUpdatedInfo *Profile `json:"userUpdated,omitempty"`
+	UserUpdatedID   string   `db:"user_updated"`
 }
 
 type File struct {
-	ID         string `json:"file_id"`
-	MimeType   string `json:"mime_type"`
-	BucketName string `json:"bucket_name"`
-	FileName   string `json:"file_name"`
+	ID         string `json:"file_id" db:"id"`
+	MimeType   string `json:"mime_type" db:"mime_type"`
+	BucketName string `json:"bucket_name" db:"bucket_name"`
+	FileName   string `json:"file_name" db:"file_name"`
 }
 
 type Like struct {

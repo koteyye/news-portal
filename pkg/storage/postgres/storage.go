@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/jmoiron/sqlx"
 
 	"github.com/koteyye/news-portal/db/news/migrations"
 	"github.com/koteyye/news-portal/db/user/migrations"
@@ -17,7 +18,7 @@ var _ storage.Storage = (*Storage)(nil)
 
 // Storage определяет структуру хранилища.
 type Storage struct {
-	db  *sql.DB
+	db  *sqlx.DB
 	cfg string
 }
 
@@ -56,8 +57,8 @@ func NewStorage(c any) (*Storage, error) {
 	return &storage, nil
 }
 
-func connect(dsn string) (*sql.DB, error) {
-	db, err := sql.Open("postgres", dsn)
+func connect(dsn string) (*sqlx.DB, error) {
+	db, err := sqlx.Open("postgres", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("can't create connecting to db: %w", err)
 	}
@@ -76,21 +77,21 @@ func (s *Storage) Close() error {
 
 func (s *Storage) Up(ctx context.Context) error {
 	if s.cfg == cfgNews {
-		return newsmigration.Up(ctx, s.db)
+		return newsmigration.Up(ctx, s.db.DB)
 	}
-	return usermigration.Up(ctx, s.db)
+	return usermigration.Up(ctx, s.db.DB)
 }
 
 func (s *Storage) Down(ctx context.Context) error {
 	if s.cfg == cfgNews {
-		return newsmigration.Down(ctx, s.db)
+		return newsmigration.Down(ctx, s.db.DB)
 	}
-	return usermigration.Down(ctx, s.db)
+	return usermigration.Down(ctx, s.db.DB)
 }
 
 func (s *Storage) transaction(
 	ctx context.Context,
-	fn func(*sql.Tx) error,
+	fn func(tx *sql.Tx) error,
 ) error {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	if err != nil {

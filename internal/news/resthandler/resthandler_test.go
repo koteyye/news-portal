@@ -24,7 +24,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
-	"time"
 )
 
 var testCors = []string{"localhost:8080"}
@@ -46,99 +45,6 @@ const (
 	newsFilesURL   = "/api/news/files/"
 	newsProfileURL = "/api/profile"
 )
-
-func initTestNewsAttributes(t *testing.T) *models.NewsAttributes {
-	newsID, err := uuid.NewV4()
-	assert.NoError(t, err)
-	testUser := initTestProfile(t, false)
-
-	return &models.NewsAttributes{
-		ID:          newsID.String(),
-		Title:       random.RandSeq(10),
-		Description: random.RandSeq(10),
-		Author:      testUser,
-		Content:     initTestFile(t),
-		Preview:     initTestFile(t),
-		State:       testState,
-		CreatedAt:   time.Now().String(),
-		UpdatedAt:   time.Now().String(),
-		UserCreated: testUser,
-		UserUpdated: testUser,
-	}
-}
-
-func initTestLike(t *testing.T) models.Like {
-	likeID, err := uuid.NewV4()
-	assert.NoError(t, err)
-	testUser := initTestProfile(t, false)
-	return models.Like{
-		ID:        likeID.String(),
-		CreatedAt: time.Now().String(),
-		UpdatedAt: time.Now().String(),
-		Liker:     testUser,
-	}
-}
-
-func initTestFile(t *testing.T) *models.File {
-	fileID, err := uuid.NewV4()
-	assert.NoError(t, err)
-	return &models.File{
-		ID:         fileID.String(),
-		BucketName: testBucket,
-		FileName:   random.RandSeq(5) + ".txt",
-	}
-}
-
-func initTestProfile(t *testing.T, writer bool) *models.Profile {
-	userID, err := uuid.NewV4()
-	assert.NoError(t, err)
-
-	roles := []string{"reader"}
-	if writer {
-		roles = append(roles, writerRole)
-	}
-
-	return &models.Profile{
-		ID:        userID.String(),
-		UserName:  random.RandSeq(10),
-		FirstName: random.RandSeq(10),
-		LastName:  random.RandSeq(10),
-		SurName:   random.RandSeq(10),
-		Roles:     roles,
-	}
-}
-
-//r.Route("/api", func(r chi.Router) {
-//	r.Route("/news", func(r chi.Router) {
-//		r.Route("/writer", func(r chi.Router) {
-//			r.Use(h.checkWriter)
-//			r.Post("/create", h.createNews)
-//			r.Patch("/{id}", h.editNews)
-//			r.Delete("/{id}", h.deleteNews)
-//		})
-//		r.Get("/newsList", h.getNewsList)
-//		r.Route("/{id}", func(r chi.Router) {
-//			r.Get("/", h.getNewsByID)
-//			r.Route("/likes", func(r chi.Router) {
-//				r.Get("/{id}", h.getLikesByNewsID)
-//				r.Patch("/like", h.incrementLike)
-//				r.Patch("/dislike", h.decrementLike)
-//			})
-//			r.Route("/comment", func(r chi.Router) {
-//				r.Post("/{newsID}", h.createComment)
-//				r.Patch("/", h.editComment)
-//				r.Delete("/{id}", h.deleteComment)
-//				r.Get("/{newsID}", h.getComments)
-//			})
-//		})
-//		r.Route("/files", func(r chi.Router) {
-//			r.Get("/{id}", h.downloadContent)
-//		})
-//	})
-//	r.Route("/profile", func(r chi.Router) {
-//		r.Get("/me", h.me)
-//	})
-//})
 
 func TestNewRESTHandler(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
@@ -184,15 +90,15 @@ func TestGetNewsList(t *testing.T) {
 		grpcUsers := make([]*pb.Users, 0, 5)
 		newsList := make([]*models.NewsAttributes, 0, 5)
 		for _, news := range newsList {
-			news = initTestNewsAttributes(t)
-			grpcUsersIDs = append(grpcUsersIDs, news.Author.ID)
+			news = random.InitTestNewsAttributes(t)
+			grpcUsersIDs = append(grpcUsersIDs, news.AuthorInfo.ID)
 			grpcUsers = append(grpcUsers, &pb.Users{
-				UserID:    news.Author.ID,
-				Username:  news.Author.UserName,
-				Firstname: news.Author.UserName,
-				Lastname:  news.Author.LastName,
-				Surname:   news.Author.SurName,
-				Roles:     news.Author.Roles,
+				UserID:    news.AuthorInfo.ID,
+				Username:  news.AuthorInfo.UserName,
+				Firstname: news.AuthorInfo.UserName,
+				Lastname:  news.AuthorInfo.LastName,
+				Surname:   news.AuthorInfo.SurName,
+				Roles:     news.AuthorInfo.Roles,
 			})
 		}
 
@@ -238,7 +144,7 @@ func TestCreateNews(t *testing.T) {
 
 		r.Header.Add("Content-Type", bw.FormDataContentType())
 
-		profile := initTestProfile(t, true)
+		profile := random.InitTestProfile(t, true)
 		ctx := context.WithValue(r.Context(), profileIDKey, profile)
 
 		newsUUID, err := uuid.NewV4()
@@ -287,7 +193,7 @@ func TestEditNews(t *testing.T) {
 
 		r.Header.Add("Content-Type", bw.FormDataContentType())
 
-		profile := initTestProfile(t, true)
+		profile := random.InitTestProfile(t, true)
 		ctx := context.WithValue(r.Context(), profileIDKey, profile)
 		ctx = context.WithValue(ctx, chi.RouteCtxKey, rctx)
 
@@ -313,7 +219,7 @@ func TestDeleteNews(t *testing.T) {
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("id", newsUUID.String())
 
-		profile := initTestProfile(t, true)
+		profile := random.InitTestProfile(t, true)
 		ctx := context.WithValue(r.Context(), profileIDKey, profile)
 		ctx = context.WithValue(ctx, chi.RouteCtxKey, rctx)
 
@@ -334,7 +240,7 @@ func TestGetLikesByNews(t *testing.T) {
 		likes := make(map[string]models.Like)
 		likers := make([]*pb.Users, 0, 5)
 		for i := 0; i < 5; i++ {
-			like := initTestLike(t)
+			like := random.InitTestLike(t)
 			likes[like.Liker.ID] = like
 			likers = append(likers, &pb.Users{
 				UserID:    like.Liker.ID,
@@ -351,7 +257,7 @@ func TestGetLikesByNews(t *testing.T) {
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("id", newsUUID.String())
 
-		profile := initTestProfile(t, true)
+		profile := random.InitTestProfile(t, true)
 		ctx := context.WithValue(r.Context(), profileIDKey, profile)
 		ctx = context.WithValue(ctx, chi.RouteCtxKey, rctx)
 

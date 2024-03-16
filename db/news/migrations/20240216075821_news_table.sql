@@ -38,7 +38,7 @@ create table if not exists likes (
     created_at timestamp default now(),
     updated_at timestamp default now(),
     is_active boolean default true,
-    foreign key (news_id) references news(id)
+    foreign key (news_id) references news(id),
     unique(liker, news_id)
     );
 
@@ -56,13 +56,13 @@ create table if not exists comments (
 
 -- +goose Down
 -- +goose StatementBegin
-drop table comments
+drop table comments;
 
-drop table likes
+drop table likes;
 
-drop table news
+drop table news;
 
-drop table files
+drop table files;
 
-drop type news_state
+drop type news_state;
 -- +goose StatementEnd
