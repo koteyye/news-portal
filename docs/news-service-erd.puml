@@ -1,0 +1,56 @@
+@startuml newsservice
+
+entity "news" as news {
+    * id : uuid
+    --
+    title : varchar
+    author : uuid
+    description : text
+    content_id : uuid
+    preview_id : uuid
+    state : enum[draft, published]
+    created_at : timestamp
+    updated_at : timestamp
+    deleted_at : timestamp
+    user_created : uuid
+    user_updated : uuid
+    user_deleted : uuid
+}
+
+entity "likes" as like {
+    * id : uuid
+    * news_id : uuid
+    --
+    liker : uuid
+    created_at : timestamp
+    updated_at : timestamp
+    is_active : boolean
+}
+
+entity "comments" as com {
+    * id : uuid
+    * news_id : uuid
+    --
+    author : uuid
+    content : text
+    created_at : timestamp
+    updated_at : timestamp
+    is_active : boolean
+}
+
+entity "files" as cont {
+    * id : uuid
+    --
+    file_name : varchar
+    bucket_name : varchar
+    mime_type : varchar
+    created_at : timestamp
+    updated_at : timestamp
+    deleted_at : timestamp
+}
+
+news ||..o{ like
+news ||..o{ com
+news ||..o{ cont
+
+@enduml

@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "user/proto";
+
+message Users {
+    string userID = 1;
+    string username = 2;
+    string firstname = 3;
+    string lastname = 4;
+    string surname = 5;
+    string avatar = 6;
+    repeated string roles = 7;
+}
+
+message UserByIDsRequest {
+    repeated string userids = 1;
+}
+
+message UserByIDsResponse {
+    repeated Users users = 1;
+}
+
+service User {
+    rpc GetUserByIDs(UserByIDsRequest) returns (UserByIDsResponse);
+}
